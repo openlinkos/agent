@@ -5,6 +5,7 @@ export default defineConfig({
   description:
     "An open-source framework for building, orchestrating, and deploying AI agents",
   lang: "en-US",
+  base: "/agent/",
 
   head: [
     ["link", { rel: "icon", type: "image/svg+xml", href: "/logo.svg" }],
