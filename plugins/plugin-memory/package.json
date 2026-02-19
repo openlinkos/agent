@@ -1,0 +1,33 @@
+{
+  "name": "@openlinkos/plugin-memory",
+  "version": "0.1.0",
+  "description": "OpenLinkOS Plugin — Persistent memory with vector storage and semantic retrieval for agents",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@openlinkos/agent": "workspace:*"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/openlinkos/agent.git",
+    "directory": "plugins/plugin-memory"
+  },
+  "homepage": "https://openlinkos.com",
+  "keywords": ["openlinkos", "plugin", "memory", "vector", "retrieval", "agent"]
+}

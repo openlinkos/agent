@@ -1,0 +1,30 @@
+{
+  "name": "@openlinkos/mcp",
+  "version": "0.1.0",
+  "description": "OpenLinkOS MCP — Model Context Protocol client and server for tool connectivity",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/openlinkos/agent.git",
+    "directory": "packages/mcp"
+  },
+  "homepage": "https://openlinkos.com",
+  "keywords": ["openlinkos", "mcp", "model-context-protocol", "tools", "agent"]
+}

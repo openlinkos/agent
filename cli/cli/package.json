@@ -1,0 +1,29 @@
+{
+  "name": "@openlinkos/cli",
+  "version": "0.1.0",
+  "description": "OpenLinkOS CLI — Scaffold, develop, and deploy AI agents from the command line",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "openlinkos": "dist/index.js"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs --dts",
+    "dev": "tsup src/index.ts --format cjs --dts --watch",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@openlinkos/ai": "workspace:*",
+    "@openlinkos/agent": "workspace:*"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/openlinkos/agent.git",
+    "directory": "cli/cli"
+  },
+  "homepage": "https://openlinkos.com",
+  "keywords": ["openlinkos", "cli", "agent", "scaffold", "deploy"]
+}

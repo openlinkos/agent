@@ -1,0 +1,35 @@
+{
+  "name": "@openlinkos/team",
+  "version": "0.1.0",
+  "description": "OpenLinkOS Team — Multi-agent collaboration with supervisor, swarm, pipeline, and debate patterns",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@openlinkos/ai": "workspace:*",
+    "@openlinkos/agent": "workspace:*",
+    "@openlinkos/subagent": "workspace:*"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/openlinkos/agent.git",
+    "directory": "packages/team"
+  },
+  "homepage": "https://openlinkos.com",
+  "keywords": ["openlinkos", "team", "multi-agent", "collaboration", "supervisor", "swarm", "pipeline", "debate"]
+}
