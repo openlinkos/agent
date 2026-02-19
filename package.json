@@ -2,6 +2,7 @@
   "name": "@openlinkos/monorepo",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "description": "OpenLinkOS — An open-source Agent framework for building, orchestrating, and deploying AI agents",
   "homepage": "https://openlinkos.com",
   "repository": {
