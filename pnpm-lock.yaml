@@ -41,9 +41,9 @@ importers:
 
   channels/channel-discord:
     dependencies:
-      '@openlinkos/agent':
+      '@openlinkos/channel':
         specifier: workspace:*
-        version: link:../../packages/agent
+        version: link:../../packages/channel
 
   channels/channel-feishu:
     dependencies:
@@ -53,15 +53,15 @@ importers:
 
   channels/channel-slack:
     dependencies:
-      '@openlinkos/agent':
+      '@openlinkos/channel':
         specifier: workspace:*
-        version: link:../../packages/agent
+        version: link:../../packages/channel
 
   channels/channel-telegram:
     dependencies:
-      '@openlinkos/agent':
+      '@openlinkos/channel':
         specifier: workspace:*
-        version: link:../../packages/agent
+        version: link:../../packages/channel
 
   cli/cli:
     dependencies:
@@ -79,6 +79,20 @@ importers:
         version: link:../ai
 
   packages/ai: {}
+
+  packages/channel: {}
+
+  packages/channel-terminal:
+    dependencies:
+      '@openlinkos/channel':
+        specifier: workspace:*
+        version: link:../channel
+
+  packages/channel-web:
+    dependencies:
+      '@openlinkos/channel':
+        specifier: workspace:*
+        version: link:../channel
 
   packages/cli:
     dependencies:

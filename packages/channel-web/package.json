@@ -1,15 +1,15 @@
 {
-  "name": "@openlinkos/channel-telegram",
+  "name": "@openlinkos/channel-web",
   "version": "0.1.0",
-  "description": "OpenLinkOS Channel — Telegram bot adapter for deploying agents to Telegram",
+  "description": "OpenLinkOS Channel — HTTP/WebSocket/SSE channel adapter for web-based agent communication",
   "license": "MIT",
   "homepage": "https://openlinkos.com",
   "repository": {
     "type": "git",
     "url": "https://github.com/openlinkos/agent.git",
-    "directory": "channels/channel-telegram"
+    "directory": "packages/channel-web"
   },
-  "keywords": ["openlinkos", "telegram", "bot", "channel", "agent"],
+  "keywords": ["openlinkos", "channel", "http", "websocket", "sse", "agent", "web"],
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -22,8 +22,9 @@
   },
   "files": ["dist"],
   "scripts": {
-    "build": "tsup src/index.ts --format cjs,esm --dts",
-    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "clean": "rimraf dist"
   },

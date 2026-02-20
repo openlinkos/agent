@@ -28,6 +28,6 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@openlinkos/agent": "workspace:*"
+    "@openlinkos/channel": "workspace:*"
   }
 }
