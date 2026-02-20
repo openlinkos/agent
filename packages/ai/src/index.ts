@@ -2,7 +2,7 @@
  * @openlinkos/ai — Unified model invocation layer for LLM providers.
  *
  * Provides a single abstraction over multiple LLM providers (OpenAI, Anthropic,
- * Google Gemini, DeepSeek, Qwen) with built-in tool calling, structured output,
+ * Google Gemini, DeepSeek, Qwen, Ollama) with built-in tool calling, structured output,
  * streaming, retry, and fallback support.
  *
  * @packageDocumentation
@@ -100,6 +100,7 @@ export { AnthropicProvider, createAnthropicProvider } from "./providers/anthropi
 export { GoogleProvider, createGoogleProvider } from "./providers/google.js";
 export { DeepSeekProvider, createDeepSeekProvider } from "./providers/deepseek.js";
 export { QwenProvider, createQwenProvider } from "./providers/qwen.js";
+export { OllamaProvider, createOllamaProvider } from "./providers/ollama.js";
 
 // ---------------------------------------------------------------------------
 // Model factory
