@@ -26,5 +26,8 @@
     "directory": "packages/mcp"
   },
   "homepage": "https://openlinkos.com",
-  "keywords": ["openlinkos", "mcp", "model-context-protocol", "tools", "agent"]
+  "keywords": ["openlinkos", "mcp", "model-context-protocol", "tools", "agent"],
+  "dependencies": {
+    "@openlinkos/agent": "workspace:*"
+  }
 }

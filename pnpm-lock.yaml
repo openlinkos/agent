@@ -80,7 +80,11 @@ importers:
 
   packages/ai: {}
 
-  packages/mcp: {}
+  packages/mcp:
+    dependencies:
+      '@openlinkos/agent':
+        specifier: workspace:*
+        version: link:../agent
 
   packages/subagent:
     dependencies:

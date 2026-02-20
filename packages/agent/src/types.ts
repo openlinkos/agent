@@ -6,6 +6,7 @@
  */
 
 import type { Model, ModelResponse, ToolCall, Usage } from "@openlinkos/ai";
+import type { InputGuardrail, OutputGuardrail, ContentFilter } from "./guardrails.js";
 
 // ---------------------------------------------------------------------------
 // Tool definition (with execute function)
@@ -89,6 +90,12 @@ export interface AgentConfig {
   hooks?: AgentHooks;
   /** Timeout in milliseconds for individual tool executions. Default: 30000. */
   toolTimeout?: number;
+  /** Input guardrails run before the first model call. */
+  inputGuardrails?: InputGuardrail[];
+  /** Output guardrails run before returning the final response. */
+  outputGuardrails?: OutputGuardrail[];
+  /** Content filters applied to the final response text. */
+  contentFilters?: ContentFilter[];
 }
 
 // ---------------------------------------------------------------------------

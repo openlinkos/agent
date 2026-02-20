@@ -19,6 +19,11 @@ import type {
   Agent,
 } from "./types.js";
 import { ToolRegistry, executeTool, validateParameters } from "./tools.js";
+import {
+  runInputGuardrails,
+  runOutputGuardrails,
+  applyContentFilters,
+} from "./guardrails.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -64,6 +69,9 @@ export function createAgentEngine(config: AgentConfig): Agent {
     maxIterations = 10,
     hooks = {},
     toolTimeout = 30_000,
+    inputGuardrails = [],
+    outputGuardrails = [],
+    contentFilters = [],
   } = config;
 
   // Build tool registry
@@ -87,13 +95,22 @@ export function createAgentEngine(config: AgentConfig): Agent {
       const allToolCalls: ToolCall[] = [];
       let totalUsage = emptyUsage();
 
-      // Build initial conversation
-      const messages: Message[] = [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: input },
-      ];
-
       try {
+        // Run input guardrails before the first model call
+        if (inputGuardrails.length > 0) {
+          const inputCheck = await runInputGuardrails(inputGuardrails, input);
+          if (!inputCheck.passed) {
+            const errorMsg = inputCheck.reason ?? "Input guardrail failed";
+            throw new Error(errorMsg);
+          }
+        }
+
+        // Build initial conversation
+        const messages: Message[] = [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: input },
+        ];
+
         for (let iteration = 0; iteration < maxIterations; iteration++) {
           // Generate model response
           let response: ModelResponse;
@@ -225,7 +242,25 @@ export function createAgentEngine(config: AgentConfig): Agent {
 
         // Extract final text from the last assistant message
         const lastStep = steps[steps.length - 1];
-        const finalText = lastStep?.modelResponse.text ?? "";
+        let finalText = lastStep?.modelResponse.text ?? "";
+
+        // Run output guardrails before returning the final response
+        if (outputGuardrails.length > 0) {
+          const outputCheck = await runOutputGuardrails(outputGuardrails, finalText);
+          if (!outputCheck.passed) {
+            const errorMsg = outputCheck.reason ?? "Output guardrail failed";
+            throw new Error(errorMsg);
+          }
+        }
+
+        // Apply content filters to the final response text
+        if (contentFilters.length > 0) {
+          const filtered = await applyContentFilters(contentFilters, finalText);
+          if (filtered === null) {
+            throw new Error("Content was blocked by content filter");
+          }
+          finalText = filtered;
+        }
 
         const agentResponse: AgentResponse = {
           text: finalText,
