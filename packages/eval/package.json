@@ -1,0 +1,35 @@
+{
+  "name": "@openlinkos/eval",
+  "version": "0.1.0",
+  "description": "OpenLinkOS Eval — Agent evaluation framework with scorers, reporters, and built-in test suites",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@openlinkos/ai": "workspace:*",
+    "@openlinkos/agent": "workspace:*"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/openlinkos/agent.git",
+    "directory": "packages/eval"
+  },
+  "homepage": "https://openlinkos.com",
+  "keywords": ["openlinkos", "eval", "evaluation", "testing", "llm", "agent", "benchmark"]
+}

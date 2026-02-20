@@ -112,6 +112,15 @@ importers:
         specifier: ^16.4.0
         version: 16.6.1
 
+  packages/eval:
+    dependencies:
+      '@openlinkos/agent':
+        specifier: workspace:*
+        version: link:../agent
+      '@openlinkos/ai':
+        specifier: workspace:*
+        version: link:../ai
+
   packages/mcp:
     dependencies:
       '@openlinkos/agent':
