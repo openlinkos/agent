@@ -60,6 +60,14 @@ export {
   collectEvents,
 } from "./stream.js";
 
+// --- Stream utilities ---
+export {
+  backpressureStream,
+  bufferUntil,
+  textTransform,
+  mergeStreams,
+} from "./stream-utils.js";
+
 // --- Errors ---
 export type { AIErrorCode } from "./errors.js";
 export {
