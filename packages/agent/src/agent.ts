@@ -91,11 +91,6 @@ export function createAgentEngine(config: AgentConfig): Agent {
     async run(input: string, runOptions?: AgentRunOptions): Promise<AgentResponse> {
       const signal = runOptions?.signal;
 
-      // Check abort before starting
-      if (signal?.aborted) {
-        throw new AbortError("Agent run was aborted before starting");
-      }
-
       // Notify start hook
       if (hooks.onStart) {
         await hooks.onStart(input);
@@ -106,6 +101,11 @@ export function createAgentEngine(config: AgentConfig): Agent {
       let totalUsage = emptyUsage();
 
       try {
+        // Check abort before starting
+        if (signal?.aborted) {
+          throw new AbortError("Agent run was aborted before starting");
+        }
+
         // Run input guardrails before the first model call
         if (inputGuardrails.length > 0) {
           const inputCheck = await runInputGuardrails(inputGuardrails, input);
