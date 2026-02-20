@@ -1,10 +1,10 @@
 # @openlinkos/mcp
 
-Model Context Protocol (MCP) client and server for tool connectivity.
+Model Context Protocol (MCP) client for tool connectivity.
 
 ## Overview
 
-`@openlinkos/mcp` provides first-class support for the Model Context Protocol. Connect your agents to any MCP-compatible tool server, or expose your own tools as MCP endpoints that other applications can consume.
+`@openlinkos/mcp` provides first-class support for the Model Context Protocol. Connect your agents to any MCP-compatible tool server and use discovered tools seamlessly within the agent framework.
 
 ## Installation
 
@@ -34,36 +34,27 @@ const result = await client.callTool("read_file", { path: "/tmp/data.txt" });
 await client.disconnect();
 ```
 
-### As a Server
+### Bridge to Agent Tools
 
-Expose your tools as an MCP endpoint:
+Convert MCP tools to agent-compatible `ToolDefinition` objects:
 
 ```typescript
-import { createMCPServer } from "@openlinkos/mcp";
+import { createMCPClient, mcpToolsToAgentTools } from "@openlinkos/mcp";
 
-const server = createMCPServer({ transport: "stdio" });
-
-server.registerTool({
-  name: "search_docs",
-  description: "Search the documentation",
-  inputSchema: {
-    type: "object",
-    properties: { query: { type: "string" } },
-    required: ["query"],
-  },
-  handler: async ({ query }) => {
-    return { results: [`Result for: ${query}`] };
-  },
+const client = createMCPClient({
+  server: "npx @modelcontextprotocol/server-filesystem",
+  transport: "stdio",
 });
 
-await server.start();
+await client.connect();
+const mcpTools = await client.listTools();
+const tools = mcpToolsToAgentTools(mcpTools, client);
 ```
 
 ## Features
 
 - **MCP Client** — Connect to any MCP-compatible tool server
-- **MCP Server** — Expose agents and tools as MCP endpoints
-- **Multiple transports** — stdio, HTTP/SSE, and WebSocket
+- **Multiple transports** — stdio, SSE, and streamable-http
+- **Tool bridge** — Convert MCP tools to agent ToolDefinitions
 - **Tool discovery** — Dynamic tool listing and schema introspection
 - **Session management** — Connection lifecycle and authentication
-- **Caching** — Optional tool result caching and rate limiting

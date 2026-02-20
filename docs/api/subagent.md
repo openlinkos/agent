@@ -10,7 +10,7 @@ pnpm add @openlinkos/subagent @openlinkos/agent @openlinkos/ai
 
 ## Overview
 
-`@openlinkos/subagent` enables agents to spawn child agents with scoped capabilities. Sub-agents inherit configurable context from their parent and can run in parallel.
+`@openlinkos/subagent` enables agents to spawn child agents with scoped capabilities. Sub-agents can run in parallel with concurrency control.
 
 ## `spawnSubAgent()`
 
@@ -18,27 +18,19 @@ Spawn and run a single sub-agent:
 
 ```typescript
 import { createModel } from "@openlinkos/ai";
-import { createAgent } from "@openlinkos/agent";
 import { spawnSubAgent } from "@openlinkos/subagent";
 
 const model = createModel("openai:gpt-4o");
-
-const parent = createAgent({
-  name: "coordinator",
-  model,
-  systemPrompt: "You coordinate research tasks.",
-});
 
 const result = await spawnSubAgent(
   {
     name: "researcher",
     model,
     systemPrompt: "You research topics thoroughly.",
-    task: "Research the history of TypeScript",
     contextStrategy: "summary",
     maxContextTokens: 4000,
   },
-  parent,
+  "Research the history of TypeScript",
 );
 
 console.log(result.response.text);
@@ -48,7 +40,13 @@ console.log(`Completed in ${result.durationMs}ms`);
 **Signature:**
 
 ```typescript
-function spawnSubAgent(config: SubAgentConfig, parent: Agent): Promise<SubAgentResult>
+function spawnSubAgent(
+  config: SubAgentConfig,
+  input: string,
+  options?: SpawnOptions,
+  onProgress?: ProgressCallback,
+  currentDepth?: number,
+): Promise<SubAgentResult>
 ```
 
 ## `spawnParallel()`
@@ -64,16 +62,17 @@ const results = await spawnParallel(
       name: "frontend-researcher",
       model,
       systemPrompt: "Research frontend frameworks.",
-      task: "Compare React, Vue, and Svelte",
     },
     {
       name: "backend-researcher",
       model,
       systemPrompt: "Research backend frameworks.",
-      task: "Compare Express, Fastify, and Hono",
     },
   ],
-  parent,
+  [
+    "Compare React, Vue, and Svelte",
+    "Compare Express, Fastify, and Hono",
+  ],
 );
 
 for (const result of results) {
@@ -86,7 +85,9 @@ for (const result of results) {
 ```typescript
 function spawnParallel(
   configs: SubAgentConfig[],
-  parent: Agent,
+  inputs: string[],
+  options?: SpawnOptions,
+  onProgress?: ProgressCallback,
 ): Promise<SubAgentResult[]>
 ```
 
@@ -96,16 +97,12 @@ Extends `AgentConfig` with delegation-specific settings:
 
 ```typescript
 interface SubAgentConfig extends AgentConfig {
-  /** The task to delegate to the sub-agent. */
-  task: string;
   /** Timeout in milliseconds. Default: 60000. */
   timeoutMs?: number;
   /** Maximum context tokens to pass. */
   maxContextTokens?: number;
   /** How to inherit context from the parent. */
   contextStrategy?: "full" | "summary" | "selective";
-  /** Progress callback. */
-  onProgress?: ProgressCallback;
 }
 ```
 
@@ -159,7 +156,7 @@ Monitor sub-agent execution with progress callbacks:
 ```typescript
 import { createProgressCollector, summarizeResults } from "@openlinkos/subagent";
 
-const progress = createProgressCollector((update) => {
+const collector = createProgressCollector((update) => {
   console.log(`[${update.agentName}] ${update.type}: ${update.message}`);
 });
 
@@ -168,10 +165,10 @@ const result = await spawnSubAgent(
     name: "researcher",
     model,
     systemPrompt: "Research this topic.",
-    task: "What is WebAssembly?",
-    onProgress: progress,
   },
-  parent,
+  "What is WebAssembly?",
+  {},
+  collector.callback,
 );
 
 const summary = summarizeResults([result]);

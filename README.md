@@ -16,8 +16,8 @@ OpenLinkOS provides a modular, production-ready Agent framework that covers the 
 - **Sub-agent Specialization** — Spawn, delegate to, and compose child agents with scoped capabilities. Manage context windows and handoff strategies.
 - **Multi-Agent Teams** — The framework's core differentiator. Orchestrate groups of agents using built-in collaboration patterns:
   - **Supervisor** — A lead agent delegates tasks, reviews results, and synthesizes outputs.
-  - **Swarm** — Agents self-organize, claim tasks, and converge on solutions.
-  - **Pipeline** — Sequential processing where each agent transforms and passes data forward.
+  - **Parallel** — All agents work on the task simultaneously; results are aggregated.
+  - **Sequential** — Agents process the task one after another, each building on the previous output.
   - **Debate** — Agents argue opposing perspectives, with a judge agent resolving conflicts.
 - **MCP Tool Protocol** — First-class support for the Model Context Protocol. Connect to any MCP-compatible tool server, or expose your agents as MCP tool providers.
 - **Channel Integrations** — Deploy agents to messaging platforms (Telegram, Feishu, Discord, Slack, DingTalk) with a unified channel abstraction.
@@ -32,7 +32,7 @@ OpenLinkOS provides a modular, production-ready Agent framework that covers the 
 ├─────────────────────────────────────────────────────────┤
 │  @openlinkos/team    │  @openlinkos/eval                │
 │  (supervisor, debate,│  (scorers, reporters,             │
-│   pipeline, parallel)│   test suites)                    │
+│  sequential, parallel)│   test suites)                    │
 ├──────────────────────┼──────────────────────────────────┤
 │  @openlinkos/agent   │  @openlinkos/subagent            │
 │  (tools, guardrails, │  (spawn, delegate,                │
@@ -53,7 +53,7 @@ OpenLinkOS provides a modular, production-ready Agent framework that covers the 
 | [`@openlinkos/ai`](./packages/ai) | Model invocation layer — unified interface to LLM providers |
 | [`@openlinkos/agent`](./packages/agent) | Single agent engine — tools, prompts, guardrails, loops |
 | [`@openlinkos/subagent`](./packages/subagent) | Sub-agent management — delegation, scoping, handoff |
-| [`@openlinkos/team`](./packages/team) | Multi-agent collaboration — supervisor, swarm, pipeline, debate |
+| [`@openlinkos/team`](./packages/team) | Multi-agent collaboration — supervisor, parallel, sequential, debate |
 | [`@openlinkos/mcp`](./packages/mcp) | MCP tool protocol — client and bridge |
 | [`@openlinkos/eval`](./packages/eval) | Agent evaluation — scorers, reporters, test suites |
 | [`@openlinkos/channel`](./packages/channel) | Core channel interface for unified message I/O |

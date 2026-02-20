@@ -41,6 +41,17 @@ export {
   formatUsage,
 } from "./output.js";
 
+// --- Display utilities ---
+export {
+  label,
+  separator,
+  streamWrite,
+  streamEnd,
+  formatAgentResponse,
+  formatTeamResult,
+  promptIndicator,
+} from "./utils/display.js";
+
 // --- Commands ---
 export { runCommand } from "./commands/run.js";
 export { initCommand } from "./commands/init.js";

@@ -10,7 +10,7 @@ pnpm add @openlinkos/mcp
 
 ## Overview
 
-`@openlinkos/mcp` provides first-class support for the [Model Context Protocol](https://modelcontextprotocol.io). Connect your agents to any MCP-compatible tool server, or expose your own tools as MCP endpoints.
+`@openlinkos/mcp` provides first-class support for the [Model Context Protocol](https://modelcontextprotocol.io). Connect your agents to any MCP-compatible tool server.
 
 ## `createMCPClient()`
 
@@ -37,23 +37,32 @@ function createMCPClient(config: MCPServerConfig): MCPClient
 
 ```typescript
 interface MCPServerConfig {
-  /** Command to spawn the MCP server process. */
+  /** Command to spawn the MCP server process (stdio) or URL (SSE/HTTP). */
   server: string;
+  /** Arguments for the server command (stdio transport). */
+  args?: string[];
   /** Transport protocol. */
-  transport: "stdio" | "sse" | "websocket";
-  /** Connection timeout in milliseconds. */
-  timeout?: number;
+  transport: "stdio" | "sse" | "streamable-http";
+  /** Optional authentication token. */
+  authToken?: string;
+  /** Connection timeout in milliseconds. Default: 10000. */
+  connectTimeout?: number;
+  /** Request timeout in milliseconds. Default: 30000. */
+  requestTimeout?: number;
+  /** Environment variables to pass to stdio child process. */
+  env?: Record<string, string>;
 }
 ```
 
 ## `MCPClient`
 
 ```typescript
-interface MCPClient {
+interface MCPClientInterface {
   connect(): Promise<void>;
   disconnect(): Promise<void>;
   listTools(): Promise<MCPTool[]>;
-  callTool(name: string, args: Record<string, unknown>): Promise<MCPToolResult>;
+  callTool(name: string, params: Record<string, unknown>): Promise<MCPToolResult>;
+  readonly connected: boolean;
 }
 ```
 
@@ -79,20 +88,17 @@ Convert MCP tools to agent-compatible `ToolDefinition` objects:
 
 ### `createMCPTools()`
 
-The simplest way to use MCP tools with an agent:
+Connect to an MCP server and return Agent-compatible ToolDefinitions for all available tools:
 
 ```typescript
-import { createMCPClient, createMCPTools } from "@openlinkos/mcp";
+import { createMCPTools } from "@openlinkos/mcp";
 import { createAgent } from "@openlinkos/agent";
 import { createModel } from "@openlinkos/ai";
 
-const client = createMCPClient({
+const { client, tools } = await createMCPTools({
   server: "npx @modelcontextprotocol/server-filesystem",
   transport: "stdio",
 });
-
-await client.connect();
-const tools = createMCPTools(client);
 
 const agent = createAgent({
   name: "file-agent",
@@ -108,7 +114,9 @@ await client.disconnect();
 **Signature:**
 
 ```typescript
-function createMCPTools(client: MCPClient): ToolDefinition[]
+function createMCPTools(
+  serverConfig: MCPServerConfig,
+): Promise<{ client: MCPClientInterface; tools: ToolDefinition[] }>
 ```
 
 ### `mcpToolToAgentTool()`
@@ -118,7 +126,7 @@ Convert a single MCP tool:
 ```typescript
 import { mcpToolToAgentTool } from "@openlinkos/mcp";
 
-const agentTool = mcpToolToAgentTool(mcpTool);
+const agentTool = mcpToolToAgentTool(mcpTool, client);
 ```
 
 ### `mcpToolsToAgentTools()`
@@ -128,7 +136,7 @@ Convert an array of MCP tools:
 ```typescript
 import { mcpToolsToAgentTools } from "@openlinkos/mcp";
 
-const agentTools = mcpToolsToAgentTools(mcpTools);
+const agentTools = mcpToolsToAgentTools(mcpTools, client);
 ```
 
 ## Transports
@@ -155,14 +163,14 @@ const client = createMCPClient({
 });
 ```
 
-### WebSocket
+### Streamable HTTP
 
-Full-duplex communication:
+HTTP-based bidirectional communication:
 
 ```typescript
 const client = createMCPClient({
-  server: "ws://localhost:3000/mcp",
-  transport: "websocket",
+  server: "http://localhost:3000/mcp",
+  transport: "streamable-http",
 });
 ```
 
@@ -174,7 +182,7 @@ const client = createMCPClient({
 interface MCPTool {
   name: string;
   description: string;
-  inputSchema: JSONSchema;
+  inputSchema: Record<string, unknown>;
 }
 ```
 
@@ -190,8 +198,5 @@ interface MCPToolResult {
 ### `MCPTransport`
 
 ```typescript
-interface MCPTransport {
-  send(request: MCPRequest): Promise<MCPResponse>;
-  close(): Promise<void>;
-}
+type MCPTransport = "stdio" | "sse" | "streamable-http";
 ```

@@ -17,16 +17,16 @@ pnpm add @openlinkos/eval
 ```typescript
 import { runEval, createExactMatchScorer } from "@openlinkos/eval";
 
-const results = await runEval({
-  agent,
+const report = await runEval(agent, {
+  name: "basic-qa",
   cases: [
     { input: "What is 2+2?", expected: "4" },
     { input: "Capital of France?", expected: "Paris" },
   ],
-  scorers: [createExactMatchScorer()],
+  scorer: createExactMatchScorer(),
 });
 
-console.log(`Pass rate: ${results.summary.passRate}%`);
+console.log(`Pass rate: ${report.summary.passRate * 100}%`);
 ```
 
 ## Features

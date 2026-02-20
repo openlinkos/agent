@@ -7,7 +7,7 @@ Connect agents to external tool servers using the Model Context Protocol (MCP).
 ```typescript
 import { createModel } from "@openlinkos/ai";
 import { createAgent } from "@openlinkos/agent";
-import { createMCPClient, createMCPTools } from "@openlinkos/mcp";
+import { createMCPClient, mcpToolsToAgentTools } from "@openlinkos/mcp";
 
 const model = createModel("openai:gpt-4o");
 
@@ -27,7 +27,7 @@ for (const tool of mcpTools) {
 }
 
 // 3. Convert MCP tools to agent tools
-const tools = createMCPTools(client);
+const tools = mcpToolsToAgentTools(mcpTools, client);
 
 // 4. Create an agent with MCP tools
 const agent = createAgent({
@@ -72,7 +72,7 @@ npx tsx mcp-example.ts
 You can connect to multiple MCP servers and combine their tools:
 
 ```typescript
-import { createMCPClient, createMCPTools } from "@openlinkos/mcp";
+import { createMCPClient, mcpToolsToAgentTools } from "@openlinkos/mcp";
 
 const fileClient = createMCPClient({
   server: "npx @modelcontextprotocol/server-filesystem /tmp",
@@ -86,8 +86,10 @@ const gitClient = createMCPClient({
 
 await Promise.all([fileClient.connect(), gitClient.connect()]);
 
-const fileTools = createMCPTools(fileClient);
-const gitTools = createMCPTools(gitClient);
+const fileMcpTools = await fileClient.listTools();
+const fileTools = mcpToolsToAgentTools(fileMcpTools, fileClient);
+const gitMcpTools = await gitClient.listTools();
+const gitTools = mcpToolsToAgentTools(gitMcpTools, gitClient);
 
 const agent = createAgent({
   name: "dev-assistant",
@@ -116,14 +118,14 @@ const client = createMCPClient({
 await client.connect();
 ```
 
-## Using WebSocket Transport
+## Using Streamable HTTP Transport
 
-For full-duplex communication:
+For HTTP-based bidirectional communication:
 
 ```typescript
 const client = createMCPClient({
-  server: "ws://localhost:3001/mcp",
-  transport: "websocket",
+  server: "http://localhost:3001/mcp",
+  transport: "streamable-http",
 });
 
 await client.connect();

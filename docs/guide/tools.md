@@ -174,7 +174,7 @@ const agent = createAgent({
   name: "greeter",
   model,
   systemPrompt: "You greet people.",
-  tools: registry.getAll(),
+  tools: registry.all(),
 });
 ```
 

@@ -137,7 +137,7 @@ registry.register({
   execute: async ({ name }) => `Hello, ${name}!`,
 });
 
-const tools = registry.getAll();
+const tools = registry.all();
 ```
 
 ### `validateParameters()`

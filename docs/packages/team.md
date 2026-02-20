@@ -1,6 +1,6 @@
 # @openlinkos/team
 
-Multi-agent collaboration with supervisor, swarm, pipeline, and debate patterns.
+Multi-agent collaboration with sequential, parallel, supervisor, and debate patterns.
 
 ## Overview
 
@@ -14,38 +14,41 @@ pnpm add @openlinkos/team @openlinkos/agent @openlinkos/ai
 
 ## Collaboration Modes
 
+### Sequential
+
+Agents process the task one after another. Each agent's output becomes the next agent's input.
+
+```typescript
+const team = createTeam({
+  name: "content-pipeline",
+  coordinationMode: "sequential",
+  agents: [researcher, writer, editor],
+});
+```
+
+### Parallel
+
+All agents work on the task simultaneously. Results are aggregated using a configurable strategy.
+
+```typescript
+const team = createTeam({
+  name: "analysis-team",
+  coordinationMode: "parallel",
+  agents: [agent1, agent2, agent3],
+  aggregationStrategy: "merge-all",
+});
+```
+
 ### Supervisor
 
 A lead agent receives the task, decomposes it into sub-tasks, delegates to worker agents, reviews their outputs, and synthesizes the final result.
 
 ```typescript
 const team = createTeam({
-  mode: "supervisor",
+  name: "project-team",
+  coordinationMode: "supervisor",
   agents: [supervisor, researcher, writer, reviewer],
   supervisor: supervisor,
-});
-```
-
-### Swarm
-
-Agents self-organize around a shared task. Each agent claims sub-tasks, works on them, and publishes results. The swarm converges when consensus is reached.
-
-```typescript
-const team = createTeam({
-  mode: "swarm",
-  agents: [agent1, agent2, agent3],
-  topology: "broadcast",
-});
-```
-
-### Pipeline
-
-Sequential processing where each agent transforms the input and passes it to the next. Supports conditional routing and parallel fan-out.
-
-```typescript
-const team = createTeam({
-  mode: "pipeline",
-  agents: [researcher, writer, editor],
 });
 ```
 
@@ -55,7 +58,8 @@ Agents argue opposing perspectives on a topic. A judge agent evaluates the argum
 
 ```typescript
 const team = createTeam({
-  mode: "debate",
+  name: "debate-team",
+  coordinationMode: "debate",
   agents: [proponent, opponent],
   judge: judgeAgent,
   rounds: 3,
@@ -64,7 +68,7 @@ const team = createTeam({
 
 ## Features
 
-- **Four collaboration modes** — Supervisor, swarm, pipeline, and debate
+- **Four collaboration modes** — Sequential, parallel, supervisor, and debate
 - **Shared state** — Agents communicate through a shared message bus and scratchpad
 - **Team-level observability** — Trace the full collaboration flow
 - **Budget management** — Token and cost budgets across the team

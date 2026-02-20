@@ -34,7 +34,7 @@ features:
     linkText: Team Guide
   - icon: "\U0001F527"
     title: MCP Tools
-    details: First-class Model Context Protocol support. Connect to any MCP tool server over stdio, SSE, or WebSocket.
+    details: First-class Model Context Protocol support. Connect to any MCP tool server over stdio, SSE, or streamable-http.
     link: /api/mcp
     linkText: MCP API Reference
   - icon: "\U0001F4AC"

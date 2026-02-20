@@ -11,63 +11,58 @@ Sub-agents are useful when:
 - You want to **parallelize** work by delegating to multiple agents simultaneously
 - The task is too large for a single agent's context window
 
-## Creating a Sub-agent Manager
-
-```typescript
-import { createModel } from "@openlinkos/ai";
-import { createSubAgentManager } from "@openlinkos/subagent";
-
-const model = createModel("openai:gpt-4o");
-const manager = createSubAgentManager();
-```
-
 ## Spawning Sub-agents
 
 Spawn sub-agents with scoped configurations. Each sub-agent gets its own system prompt, tools, and context limits:
 
 ```typescript
-const researcher = manager.spawn({
-  name: "researcher",
-  model,
-  systemPrompt: "You research topics thoroughly and report findings as bullet points.",
-  maxContextTokens: 4000,
-  contextStrategy: "summary",
-});
+import { createModel } from "@openlinkos/ai";
+import { spawnSubAgent } from "@openlinkos/subagent";
 
-const analyst = manager.spawn({
-  name: "analyst",
-  model,
-  systemPrompt: "You analyze data and produce insights with supporting evidence.",
-  maxContextTokens: 8000,
-  contextStrategy: "selective",
-});
-```
+const model = createModel("openai:gpt-4o");
 
-## Delegating Tasks
-
-Delegate a specific task to a sub-agent and get back the result:
-
-```typescript
-const result = await manager.delegate(
-  researcher,
-  "Research the current state of WebAssembly adoption in production"
+const result = await spawnSubAgent(
+  {
+    name: "researcher",
+    model,
+    systemPrompt: "You research topics thoroughly and report findings as bullet points.",
+    maxContextTokens: 4000,
+    contextStrategy: "summary",
+  },
+  "Research the current state of WebAssembly adoption in production",
 );
 
 if (result.success) {
   console.log(result.response.text);
 } else {
-  console.error("Delegation failed:", result.error);
+  console.error("Sub-agent failed:", result.error);
 }
 ```
 
-## Parallel Delegation
+## Parallel Execution
 
 Send tasks to multiple sub-agents concurrently:
 
 ```typescript
-const results = await manager.delegateAll(
-  [researcher, analyst],
-  "Evaluate the pros and cons of server-side rendering"
+import { spawnParallel } from "@openlinkos/subagent";
+
+const results = await spawnParallel(
+  [
+    {
+      name: "researcher",
+      model,
+      systemPrompt: "You research topics thoroughly.",
+    },
+    {
+      name: "analyst",
+      model,
+      systemPrompt: "You analyze data and produce insights.",
+    },
+  ],
+  [
+    "Research the pros and cons of server-side rendering",
+    "Analyze the performance impact of server-side rendering",
+  ],
 );
 
 for (const result of results) {
@@ -87,10 +82,10 @@ Control how much context a sub-agent receives:
 
 ## Error Handling
 
-Sub-agent delegations can fail due to timeouts, model errors, or task complexity. The `DelegationResult` provides structured error information:
+Sub-agent executions can fail due to timeouts, model errors, or task complexity. The `SubAgentResult` provides structured error information:
 
 ```typescript
-const result = await manager.delegate(researcher, "Some complex task");
+const result = await spawnSubAgent(config, "Some complex task");
 
 if (!result.success) {
   // Handle the failure — retry, try a different agent, or escalate

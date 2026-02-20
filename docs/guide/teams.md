@@ -10,7 +10,7 @@ pnpm add @openlinkos/team @openlinkos/agent @openlinkos/ai
 
 ## Coordination Modes
 
-### Sequential (Pipeline)
+### Sequential
 
 Agents process the task one after another. Each agent's output becomes the next agent's input:
 

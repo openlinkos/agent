@@ -16,20 +16,22 @@ pnpm add @openlinkos/subagent @openlinkos/agent @openlinkos/ai
 
 ```typescript
 import { createModel } from "@openlinkos/ai";
-import { createSubAgentManager } from "@openlinkos/subagent";
+import { createAgent } from "@openlinkos/agent";
+import { spawnSubAgent } from "@openlinkos/subagent";
 
-const manager = createSubAgentManager();
 const model = createModel("openai:gpt-4o");
 
-const researcher = manager.spawn({
-  name: "researcher",
-  model,
-  systemPrompt: "You research topics thoroughly and report findings.",
-  maxContextTokens: 4000,
-  contextStrategy: "summary",
-});
+const result = await spawnSubAgent(
+  {
+    name: "researcher",
+    model,
+    systemPrompt: "You research topics thoroughly and report findings.",
+    maxContextTokens: 4000,
+    contextStrategy: "summary",
+  },
+  "Research WebAssembly use cases",
+);
 
-const result = await manager.delegate(researcher, "Research WebAssembly use cases");
 console.log(result.response.text);
 ```
 
