@@ -87,6 +87,13 @@ export {
   createFallback,
 } from "./retry.js";
 
+// --- Structured output ---
+export { generateObject, validateSchema } from "./structured.js";
+export type {
+  GenerateObjectOptions,
+  GenerateObjectResult,
+} from "./structured.js";
+
 // --- Provider implementations ---
 export { OpenAIProvider, createOpenAIProvider } from "./providers/openai.js";
 export { AnthropicProvider, createAnthropicProvider } from "./providers/anthropic.js";

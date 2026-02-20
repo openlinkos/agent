@@ -111,6 +111,22 @@ export type {
 // --- Agent engine ---
 export { createAgentEngine } from "./agent.js";
 
+// --- Workflow ---
+export { createWorkflow } from "./workflow.js";
+export type {
+  WorkflowStep,
+  WorkflowConfig,
+  WorkflowResult,
+  Workflow,
+  StepFunction,
+  OnStepComplete,
+  OnWorkflowError,
+} from "./workflow.js";
+
+// --- Agent-as-Tool ---
+export { agentAsTool, getCurrentDepth, resetDepth } from "./agent-tool.js";
+export type { AgentAsToolOptions } from "./agent-tool.js";
+
 // --- Conversation ---
 export { Conversation, createConversation } from "./conversation.js";
 export type { ConversationOptions } from "./conversation.js";
