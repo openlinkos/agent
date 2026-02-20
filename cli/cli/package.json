@@ -25,5 +25,14 @@
     "directory": "cli/cli"
   },
   "homepage": "https://openlinkos.com",
-  "keywords": ["openlinkos", "cli", "agent", "scaffold", "deploy"]
+  "bugs": {
+    "url": "https://github.com/openlinkos/agent/issues"
+  },
+  "keywords": ["openlinkos", "cli", "agent", "scaffold", "deploy"],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
 }

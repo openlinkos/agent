@@ -9,7 +9,16 @@
     "url": "https://github.com/openlinkos/agent.git",
     "directory": "packages/channel-web"
   },
+  "bugs": {
+    "url": "https://github.com/openlinkos/agent/issues"
+  },
   "keywords": ["openlinkos", "channel", "http", "websocket", "sse", "agent", "web"],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",

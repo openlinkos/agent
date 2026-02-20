@@ -30,5 +30,14 @@
     "directory": "packages/subagent"
   },
   "homepage": "https://openlinkos.com",
-  "keywords": ["openlinkos", "subagent", "agent", "delegation", "composition"]
+  "bugs": {
+    "url": "https://github.com/openlinkos/agent/issues"
+  },
+  "keywords": ["openlinkos", "subagent", "agent", "delegation", "composition"],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
 }

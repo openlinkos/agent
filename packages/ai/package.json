@@ -27,5 +27,14 @@
     "directory": "packages/ai"
   },
   "homepage": "https://openlinkos.com",
-  "keywords": ["openlinkos", "ai", "llm", "agent", "openai", "anthropic"]
+  "bugs": {
+    "url": "https://github.com/openlinkos/agent/issues"
+  },
+  "keywords": ["openlinkos", "ai", "llm", "agent", "openai", "anthropic"],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
 }

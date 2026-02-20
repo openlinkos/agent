@@ -9,7 +9,16 @@
     "url": "https://github.com/openlinkos/agent.git",
     "directory": "channels/channel-slack"
   },
+  "bugs": {
+    "url": "https://github.com/openlinkos/agent/issues"
+  },
   "keywords": ["openlinkos", "slack", "bot", "channel", "agent"],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",

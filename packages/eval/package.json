@@ -31,5 +31,14 @@
     "directory": "packages/eval"
   },
   "homepage": "https://openlinkos.com",
-  "keywords": ["openlinkos", "eval", "evaluation", "testing", "llm", "agent", "benchmark"]
+  "bugs": {
+    "url": "https://github.com/openlinkos/agent/issues"
+  },
+  "keywords": ["openlinkos", "eval", "evaluation", "testing", "llm", "agent", "benchmark"],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
 }

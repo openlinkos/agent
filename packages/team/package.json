@@ -31,5 +31,14 @@
     "directory": "packages/team"
   },
   "homepage": "https://openlinkos.com",
-  "keywords": ["openlinkos", "team", "multi-agent", "collaboration", "supervisor", "swarm", "pipeline", "debate"]
+  "bugs": {
+    "url": "https://github.com/openlinkos/agent/issues"
+  },
+  "keywords": ["openlinkos", "team", "multi-agent", "collaboration", "supervisor", "swarm", "pipeline", "debate"],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
 }

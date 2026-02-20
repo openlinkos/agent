@@ -26,7 +26,16 @@
     "directory": "packages/mcp"
   },
   "homepage": "https://openlinkos.com",
+  "bugs": {
+    "url": "https://github.com/openlinkos/agent/issues"
+  },
   "keywords": ["openlinkos", "mcp", "model-context-protocol", "tools", "agent"],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "@openlinkos/agent": "workspace:*"
   }

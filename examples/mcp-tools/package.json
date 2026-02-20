@@ -1,0 +1,15 @@
+{
+  "name": "@openlinkos/example-mcp-tools",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "MCP tools integration example using @openlinkos/mcp",
+  "scripts": {
+    "start": "npx tsx mcp-agent.ts"
+  },
+  "dependencies": {
+    "@openlinkos/ai": "workspace:*",
+    "@openlinkos/agent": "workspace:*",
+    "@openlinkos/mcp": "workspace:*"
+  }
+}

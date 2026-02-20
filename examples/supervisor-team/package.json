@@ -1,0 +1,15 @@
+{
+  "name": "@openlinkos/example-supervisor-team",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Supervisor team example using @openlinkos/team",
+  "scripts": {
+    "start": "npx tsx supervisor.ts"
+  },
+  "dependencies": {
+    "@openlinkos/ai": "workspace:*",
+    "@openlinkos/agent": "workspace:*",
+    "@openlinkos/team": "workspace:*"
+  }
+}

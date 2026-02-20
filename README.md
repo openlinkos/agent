@@ -24,6 +24,28 @@ OpenLinkOS provides a modular, production-ready Agent framework that covers the 
 - **Plugin System** — Extend agent capabilities with composable plugins for memory, retrieval, logging, and more.
 - **CLI** — Scaffold projects, run agents locally, and manage deployments from the command line.
 
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    @openlinkos/cli                       │
+├─────────────────────────────────────────────────────────┤
+│  @openlinkos/team    │  @openlinkos/eval                │
+│  (supervisor, debate,│  (scorers, reporters,             │
+│   pipeline, parallel)│   test suites)                    │
+├──────────────────────┼──────────────────────────────────┤
+│  @openlinkos/agent   │  @openlinkos/subagent            │
+│  (tools, guardrails, │  (spawn, delegate,                │
+│   ReAct loop, hooks) │   progress tracking)              │
+├──────────────────────┴──────────────────────────────────┤
+│  @openlinkos/ai                                         │
+│  (OpenAI, Anthropic, Google — streaming, retry, tools)  │
+├─────────────────────────────────────────────────────────┤
+│  @openlinkos/mcp     │  @openlinkos/channel             │
+│  (MCP client/bridge) │  (terminal, web, Slack, ...)     │
+└─────────────────────────────────────────────────────────┘
+```
+
 ## Package Structure
 
 | Package | Description |
@@ -32,7 +54,11 @@ OpenLinkOS provides a modular, production-ready Agent framework that covers the 
 | [`@openlinkos/agent`](./packages/agent) | Single agent engine — tools, prompts, guardrails, loops |
 | [`@openlinkos/subagent`](./packages/subagent) | Sub-agent management — delegation, scoping, handoff |
 | [`@openlinkos/team`](./packages/team) | Multi-agent collaboration — supervisor, swarm, pipeline, debate |
-| [`@openlinkos/mcp`](./packages/mcp) | MCP tool protocol — client and server implementations |
+| [`@openlinkos/mcp`](./packages/mcp) | MCP tool protocol — client and bridge |
+| [`@openlinkos/eval`](./packages/eval) | Agent evaluation — scorers, reporters, test suites |
+| [`@openlinkos/channel`](./packages/channel) | Core channel interface for unified message I/O |
+| [`@openlinkos/channel-terminal`](./packages/channel-terminal) | Terminal/stdin channel adapter |
+| [`@openlinkos/channel-web`](./packages/channel-web) | HTTP/WebSocket/SSE channel adapter |
 | [`@openlinkos/cli`](./cli/cli) | Command-line interface — project scaffolding and local dev |
 | [`@openlinkos/channel-telegram`](./channels/channel-telegram) | Telegram bot channel adapter |
 | [`@openlinkos/channel-feishu`](./channels/channel-feishu) | Feishu (Lark) bot channel adapter |
@@ -103,12 +129,31 @@ const writer = createAgent({
 });
 
 const team = createTeam({
-  mode: "pipeline",
+  name: "content-team",
+  coordinationMode: "sequential",
   agents: [researcher, writer],
 });
 
 const result = await team.run("Write an article about quantum computing.");
-console.log(result.text);
+console.log(result.finalOutput);
+```
+
+## Examples
+
+Runnable examples are in the [`examples/`](./examples) directory:
+
+| Example | Description |
+|---------|-------------|
+| [`basic-chatbot`](./examples/basic-chatbot) | Agent with a calculator tool and mock provider |
+| [`multi-agent-debate`](./examples/multi-agent-debate) | Two agents debating with a judge |
+| [`supervisor-team`](./examples/supervisor-team) | Supervisor delegating to workers |
+| [`mcp-tools`](./examples/mcp-tools) | Agent using MCP tools via bridge |
+
+Run any example with:
+
+```bash
+cd examples/basic-chatbot
+npx tsx chatbot.ts
 ```
 
 ## Documentation
@@ -141,4 +186,4 @@ We welcome contributions of all kinds. See [CONTRIBUTING.md](./CONTRIBUTING.md) 
 
 ## License
 
-[MIT](./LICENSE) — Copyright (c) 2026 OpenLinkOS
+[MIT](./LICENSE) — Copyright (c) 2026 OpenLinkOS contributors
