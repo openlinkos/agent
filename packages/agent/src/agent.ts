@@ -82,6 +82,7 @@ export function createAgentEngine(config: AgentConfig): Agent {
     contentFilters = [],
     middlewares = [],
     plugins = [],
+    tracer,
   } = config;
 
   // Build tool registry
@@ -158,6 +159,24 @@ export function createAgentEngine(config: AgentConfig): Agent {
 
       const signal = runOptions?.signal;
 
+      // --- Tracing: start trace for this run ---
+      let traceId: string | undefined;
+      let runSpanId: string | undefined;
+      if (tracer) {
+        const trace = tracer.startTrace(`agent:${name}`, { agent: name, input });
+        traceId = trace.id;
+        const runSpan = tracer.startSpan(traceId, "agent-run", undefined, { agent: name });
+        runSpanId = runSpan.id;
+      }
+
+      // Helper to safely end tracing on success or error
+      async function endTracing(status: "ok" | "error", attrs: Record<string, unknown> = {}): Promise<void> {
+        if (tracer && traceId && runSpanId) {
+          tracer.endSpan(traceId, runSpanId, status, attrs);
+          await tracer.endTrace(traceId);
+        }
+      }
+
       // Notify start hook
       if (hooks.onStart) {
         await hooks.onStart(input);
@@ -205,12 +224,37 @@ export function createAgentEngine(config: AgentConfig): Agent {
           };
           await mwStack.executeBeforeGenerate(beforeGenCtx);
 
+          // --- Tracing: LLM call span ---
+          let llmSpanId: string | undefined;
+          if (tracer && traceId) {
+            const llmSpan = tracer.startSpan(traceId, "llm-call", runSpanId, { iteration });
+            llmSpanId = llmSpan.id;
+          }
+
           // Generate model response
           let response: ModelResponse;
-          if (hasTools) {
-            response = await model.generateWithTools(messages, toAITools(registry), undefined, modelRequestOptions);
-          } else {
-            response = await model.generate(messages, undefined, modelRequestOptions);
+          try {
+            if (hasTools) {
+              response = await model.generateWithTools(messages, toAITools(registry), undefined, modelRequestOptions);
+            } else {
+              response = await model.generate(messages, undefined, modelRequestOptions);
+            }
+            // End LLM span on success
+            if (tracer && traceId && llmSpanId) {
+              tracer.endSpan(traceId, llmSpanId, "ok", {
+                toolCallCount: response.toolCalls.length,
+                promptTokens: response.usage.promptTokens,
+                completionTokens: response.usage.completionTokens,
+              });
+            }
+          } catch (llmErr) {
+            // End LLM span on error
+            if (tracer && traceId && llmSpanId) {
+              tracer.endSpan(traceId, llmSpanId, "error", {
+                error: llmErr instanceof Error ? llmErr.message : String(llmErr),
+              });
+            }
+            throw llmErr;
           }
 
           // --- Middleware: afterGenerate ---
@@ -342,12 +386,29 @@ export function createAgentEngine(config: AgentConfig): Agent {
               continue;
             }
 
+            // --- Tracing: tool call span ---
+            let toolSpanId: string | undefined;
+            if (tracer && traceId) {
+              const toolSpan = tracer.startSpan(traceId, `tool:${toolCall.name}`, runSpanId, {
+                toolName: toolCall.name,
+                toolCallId: toolCall.id,
+              });
+              toolSpanId = toolSpan.id;
+            }
+
             // Execute
             const { result, error } = await executeTool(
               tool,
               toolCall.arguments,
               toolTimeout,
             );
+
+            // End tool span
+            if (tracer && traceId && toolSpanId) {
+              tracer.endSpan(traceId, toolSpanId, error ? "error" : "ok", {
+                ...(error ? { error } : {}),
+              });
+            }
 
             step.toolCalls.push({
               call: toolCall,
@@ -428,9 +489,15 @@ export function createAgentEngine(config: AgentConfig): Agent {
           await hooks.onEnd(agentResponse);
         }
 
+        // --- Tracing: end trace on success ---
+        await endTracing("ok", { totalTokens: totalUsage.totalTokens });
+
         return agentResponse;
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
+
+        // --- Tracing: end trace on error ---
+        await endTracing("error", { error: error.message });
 
         // --- Middleware: onError ---
         const errorCtx = { error, handled: false };

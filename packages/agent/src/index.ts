@@ -85,6 +85,29 @@ export type {
 // --- Plugin ---
 export type { Plugin } from "./plugin.js";
 
+// --- Tracer ---
+export { Tracer } from "./tracer.js";
+export type {
+  Trace,
+  Span,
+  SpanStatus,
+  SpanEvent,
+  TraceExporter,
+  TracerOptions,
+} from "./tracer.js";
+
+// --- Exporters ---
+export {
+  createConsoleExporter,
+  createJsonExporter,
+  createCallbackExporter,
+} from "./exporters/index.js";
+export type {
+  ConsoleExporterOptions,
+  JsonExporterOptions,
+  TraceCallback,
+} from "./exporters/index.js";
+
 // --- Agent engine ---
 export { createAgentEngine } from "./agent.js";
 

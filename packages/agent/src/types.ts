@@ -9,6 +9,7 @@ import type { Model, ModelResponse, ToolCall, Usage } from "@openlinkos/ai";
 import type { InputGuardrail, OutputGuardrail, ContentFilter } from "./guardrails.js";
 import type { Middleware } from "./middleware.js";
 import type { Plugin } from "./plugin.js";
+import type { Tracer } from "./tracer.js";
 
 // ---------------------------------------------------------------------------
 // Tool definition (with execute function)
@@ -102,6 +103,8 @@ export interface AgentConfig {
   middlewares?: Middleware[];
   /** Plugins to install (bundles of middleware and tools). */
   plugins?: Plugin[];
+  /** Tracer instance for observability tracing. */
+  tracer?: Tracer;
 }
 
 // ---------------------------------------------------------------------------

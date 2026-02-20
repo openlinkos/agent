@@ -6,6 +6,7 @@
  */
 
 import type { Agent, AgentResponse, Usage } from "@openlinkos/agent";
+import type { Tracer } from "@openlinkos/agent";
 
 // ---------------------------------------------------------------------------
 // Coordination modes
@@ -75,6 +76,8 @@ export interface TeamConfig {
   maxRounds?: number;
   /** Lifecycle hooks for observability. */
   hooks?: TeamHooks;
+  /** Tracer instance for observability tracing. */
+  tracer?: Tracer;
 }
 
 // ---------------------------------------------------------------------------
