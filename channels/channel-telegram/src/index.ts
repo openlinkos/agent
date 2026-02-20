@@ -238,6 +238,10 @@ export class TelegramChannel extends BaseChannel {
       req.on("data", (chunk: Buffer) => {
         body += chunk.toString();
       });
+      req.on("error", () => {
+        res.writeHead(400);
+        res.end("Request stream error");
+      });
       req.on("end", () => {
         try {
           const update = JSON.parse(body) as TelegramUpdate;
@@ -251,7 +255,8 @@ export class TelegramChannel extends BaseChannel {
       });
     });
 
-    await new Promise<void>((resolve) => {
+    await new Promise<void>((resolve, reject) => {
+      this.webhookServer!.on("error", reject);
       this.webhookServer!.listen(this.webhookPort, () => resolve());
     });
   }

@@ -79,14 +79,22 @@ export abstract class BaseChannel implements Channel {
   /** Dispatch an incoming message to all registered handlers. */
   protected async emitMessage(message: ChannelMessage): Promise<void> {
     for (const handler of this._messageHandlers) {
-      await handler(message);
+      try {
+        await handler(message);
+      } catch (err) {
+        this.emitError(err instanceof Error ? err : new Error(String(err)));
+      }
     }
   }
 
   /** Dispatch an error to all registered handlers. */
   protected emitError(error: Error): void {
     for (const handler of this._errorHandlers) {
-      handler(error);
+      try {
+        handler(error);
+      } catch {
+        // Prevent a faulty error handler from breaking the loop
+      }
     }
   }
 

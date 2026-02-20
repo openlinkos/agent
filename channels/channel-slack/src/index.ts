@@ -198,6 +198,10 @@ export class SlackChannel extends BaseChannel {
     req.on("data", (chunk: Buffer) => {
       body += chunk.toString();
     });
+    req.on("error", () => {
+      res.writeHead(400);
+      res.end("Request stream error");
+    });
 
     req.on("end", () => {
       // Verify Slack signature

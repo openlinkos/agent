@@ -131,7 +131,13 @@ export function createPersistentMemory(
         // File doesn't exist yet — start empty
         return;
       }
-      const data = JSON.parse(raw) as Record<string, StoredEntry>;
+      let data: Record<string, StoredEntry>;
+      try {
+        data = JSON.parse(raw) as Record<string, StoredEntry>;
+      } catch {
+        // Corrupt JSON file — start empty rather than crash
+        return;
+      }
       store.clear();
       const now = Date.now();
       for (const [key, entry] of Object.entries(data)) {

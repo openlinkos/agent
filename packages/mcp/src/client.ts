@@ -172,10 +172,10 @@ export class SSETransport implements TransportHandler {
         throw new Error(`Server returned ${response.status}`);
       }
     } catch (err) {
-      // If health check fails with network error, mark connected anyway
-      // since some servers don't have health endpoints
+      // Network-level failure means the server is unreachable — re-throw.
+      // Non-network errors (404, etc.) are swallowed because some servers
+      // don't have health endpoints; we proceed and mark as connected.
       if (err instanceof TypeError && (err.message.includes("fetch") || err.message.includes("network"))) {
-        // Network-level failure — server unreachable
         throw new Error(`Cannot reach MCP server at ${this.baseUrl}`);
       }
     }

@@ -157,6 +157,10 @@ export class WebChannel extends BaseChannel {
     req.on("data", (chunk: Buffer) => {
       body += chunk.toString();
     });
+    req.on("error", () => {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Request stream error" }));
+    });
     req.on("end", () => {
       try {
         const parsed = JSON.parse(body) as { text?: string; metadata?: Record<string, unknown> };

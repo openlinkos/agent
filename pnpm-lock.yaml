@@ -35,9 +35,9 @@ importers:
 
   channels/channel-dingtalk:
     dependencies:
-      '@openlinkos/agent':
+      '@openlinkos/channel':
         specifier: workspace:*
-        version: link:../../packages/agent
+        version: link:../../packages/channel
 
   channels/channel-discord:
     dependencies:
@@ -47,9 +47,9 @@ importers:
 
   channels/channel-feishu:
     dependencies:
-      '@openlinkos/agent':
+      '@openlinkos/channel':
         specifier: workspace:*
-        version: link:../../packages/agent
+        version: link:../../packages/channel
 
   channels/channel-slack:
     dependencies:

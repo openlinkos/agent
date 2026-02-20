@@ -1,13 +1,11 @@
-import type { Agent } from "@openlinkos/agent";
+import type { BaseChannelConfig } from "@openlinkos/channel";
 
 /** Configuration for the DingTalk channel adapter. */
-export interface DingTalkChannelConfig {
+export interface DingTalkChannelConfig extends BaseChannelConfig {
   /** The DingTalk bot access token. */
   accessToken: string;
   /** Optional signing secret for verifying incoming webhook requests. */
   secret?: string;
-  /** The agent to handle incoming messages. */
-  agent: Agent;
 }
 
 /** A running DingTalk channel instance. */

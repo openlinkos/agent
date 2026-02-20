@@ -1,15 +1,13 @@
-import type { Agent } from "@openlinkos/agent";
+import type { BaseChannelConfig } from "@openlinkos/channel";
 
 /** Configuration for the Feishu (Lark) channel adapter. */
-export interface FeishuChannelConfig {
+export interface FeishuChannelConfig extends BaseChannelConfig {
   /** The Feishu application ID. */
   appId: string;
   /** The Feishu application secret. */
   appSecret: string;
   /** Optional verification token for validating incoming webhook requests. */
   verificationToken?: string;
-  /** The agent to handle incoming messages. */
-  agent: Agent;
 }
 
 /** A running Feishu channel instance. */
