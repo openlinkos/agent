@@ -117,6 +117,16 @@ export interface AgentResponse {
 }
 
 // ---------------------------------------------------------------------------
+// Agent run options
+// ---------------------------------------------------------------------------
+
+/** Options for a single agent run. */
+export interface AgentRunOptions {
+  /** AbortSignal to cancel the agent run. */
+  signal?: AbortSignal;
+}
+
+// ---------------------------------------------------------------------------
 // Agent interface
 // ---------------------------------------------------------------------------
 
@@ -125,7 +135,7 @@ export interface Agent {
   /** The agent's name. */
   readonly name: string;
   /** Run the agent with the given user input. */
-  run(input: string): Promise<AgentResponse>;
+  run(input: string, options?: AgentRunOptions): Promise<AgentResponse>;
 }
 
 // Re-export Model-related types from @openlinkos/ai for convenience

@@ -18,6 +18,11 @@ import type { ModelProvider, ProviderRequestOptions } from "../provider.js";
 import type { StreamResult } from "../stream.js";
 import { createStream } from "../stream.js";
 import type { StreamEvent } from "../stream.js";
+import {
+  mapHttpError,
+  AuthenticationError,
+  TimeoutError,
+} from "../errors.js";
 
 // ---------------------------------------------------------------------------
 // OpenAI API types (minimal subset)
@@ -28,6 +33,7 @@ interface OpenAIMessage {
   content: string | null;
   tool_calls?: OpenAIToolCall[];
   tool_call_id?: string;
+  function_call?: { name: string; arguments: string };
 }
 
 interface OpenAIToolCall {
@@ -55,6 +61,7 @@ interface OpenAIChatResponse {
       role: "assistant";
       content: string | null;
       tool_calls?: OpenAIToolCall[];
+      function_call?: { name: string; arguments: string };
     };
     finish_reason: string;
   }>;
@@ -147,11 +154,24 @@ function parseToolCalls(toolCalls?: OpenAIToolCall[]): ToolCall[] {
   }));
 }
 
+/**
+ * Parse legacy function_call format into a ToolCall array.
+ */
+function parseFunctionCall(fc?: { name: string; arguments: string }): ToolCall[] {
+  if (!fc) return [];
+  return [{
+    id: `fc_${Math.random().toString(36).slice(2, 11)}`,
+    name: fc.name,
+    arguments: JSON.parse(fc.arguments) as Record<string, unknown>,
+  }];
+}
+
 function parseFinishReason(reason: string): ModelResponse["finishReason"] {
   switch (reason) {
     case "stop": return "stop";
     case "length": return "length";
     case "tool_calls": return "tool_calls";
+    case "function_call": return "tool_calls";
     case "content_filter": return "content_filter";
     default: return "unknown";
   }
@@ -187,8 +207,9 @@ export class OpenAIProvider implements ModelProvider {
   private getApiKey(options: ProviderRequestOptions): string {
     const key = options.apiKey ?? process.env.OPENAI_API_KEY;
     if (!key) {
-      throw new Error(
+      throw new AuthenticationError(
         "OpenAI API key is required. Set OPENAI_API_KEY environment variable or pass apiKey in config.",
+        { provider: "openai" },
       );
     }
     return key;
@@ -225,11 +246,12 @@ export class OpenAIProvider implements ModelProvider {
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify(body),
+      signal: options.signal,
     });
 
     if (!response.ok) {
       const errText = await response.text();
-      throw new Error(`OpenAI API error (${response.status}): ${errText}`);
+      throw mapHttpError(response.status, errText, "OpenAI", response.headers);
     }
 
     const reader = response.body?.getReader();
@@ -237,7 +259,7 @@ export class OpenAIProvider implements ModelProvider {
       throw new Error("OpenAI streaming response has no body.");
     }
 
-    return createStream(this.parseSSEStream(reader));
+    return createStream(this.parseSSEStream(reader, options.signal));
   }
 
   async generateWithTools(
@@ -273,19 +295,25 @@ export class OpenAIProvider implements ModelProvider {
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify(body),
+      signal: options.signal,
     });
 
     if (!response.ok) {
       const errText = await response.text();
-      throw new Error(`OpenAI API error (${response.status}): ${errText}`);
+      throw mapHttpError(response.status, errText, "OpenAI", response.headers);
     }
 
     const data = (await response.json()) as OpenAIChatResponse;
     const choice = data.choices[0];
 
+    // Handle both tool_calls and legacy function_call formats
+    const toolCalls = choice.message.tool_calls
+      ? parseToolCalls(choice.message.tool_calls)
+      : parseFunctionCall(choice.message.function_call);
+
     return {
       text: choice.message.content,
-      toolCalls: parseToolCalls(choice.message.tool_calls),
+      toolCalls,
       usage: parseUsage(data.usage),
       finishReason: parseFinishReason(choice.finish_reason),
     };
@@ -293,15 +321,35 @@ export class OpenAIProvider implements ModelProvider {
 
   private async *parseSSEStream(
     reader: ReadableStreamDefaultReader<Uint8Array>,
+    signal?: AbortSignal,
   ): AsyncGenerator<StreamEvent> {
     const decoder = new TextDecoder();
     let buffer = "";
+    let streamTimeoutMs = 30_000;
+    let lastDataTime = Date.now();
 
     try {
       while (true) {
-        const { done, value } = await reader.read();
+        // Check abort signal
+        if (signal?.aborted) {
+          throw signal.reason ?? new Error("Aborted");
+        }
+
+        // Timeout check: no data for streamTimeoutMs
+        const readPromise = reader.read();
+        const timeoutPromise = new Promise<{ done: true; value: undefined }>((resolve) => {
+          const remaining = streamTimeoutMs - (Date.now() - lastDataTime);
+          setTimeout(() => resolve({ done: true, value: undefined }), Math.max(remaining, 0));
+        });
+
+        const { done, value } = await Promise.race([readPromise, timeoutPromise]);
+
+        if (done && value === undefined && (Date.now() - lastDataTime) >= streamTimeoutMs) {
+          throw new TimeoutError(`OpenAI stream timed out after ${streamTimeoutMs}ms of inactivity`);
+        }
         if (done) break;
 
+        lastDataTime = Date.now();
         buffer += decoder.decode(value, { stream: true });
 
         const lines = buffer.split("\n");
@@ -328,9 +376,6 @@ export class OpenAIProvider implements ModelProvider {
           if (delta?.tool_calls) {
             for (const tc of delta.tool_calls) {
               if (tc.id) {
-                // During streaming, arguments arrive as partial JSON fragments
-                // that cannot be reliably parsed until the stream is complete.
-                // Emit the raw fragment so consumers can accumulate and parse later.
                 yield {
                   type: "tool_call_delta",
                   toolCall: {
@@ -344,6 +389,13 @@ export class OpenAIProvider implements ModelProvider {
 
           if (chunk.usage) {
             yield { type: "usage", usage: parseUsage(chunk.usage) };
+          }
+
+          // Handle content_filter finish reason in stream
+          const finishReason = chunk.choices?.[0]?.finish_reason;
+          if (finishReason === "content_filter") {
+            yield { type: "done" };
+            return;
           }
         }
       }

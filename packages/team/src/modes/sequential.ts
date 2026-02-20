@@ -20,6 +20,7 @@ export async function runSequential(
   input: string,
   maxRounds: number,
   hooks: TeamHooks,
+  signal?: AbortSignal,
 ): Promise<TeamResult> {
   const agentResults: AgentResponse[] = [];
   let currentInput = input;
@@ -30,6 +31,11 @@ export async function runSequential(
   }
 
   for (let i = 0; i < effectiveAgents.length; i++) {
+    // Check abort signal between agents
+    if (signal?.aborted) {
+      break;
+    }
+
     const { agent } = effectiveAgents[i];
 
     if (hooks.onAgentStart) {
@@ -38,7 +44,7 @@ export async function runSequential(
 
     let response: AgentResponse;
     try {
-      response = await agent.run(currentInput);
+      response = await agent.run(currentInput, signal ? { signal } : undefined);
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
       if (hooks.onError) {

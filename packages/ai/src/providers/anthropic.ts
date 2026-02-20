@@ -18,6 +18,12 @@ import type { ModelProvider, ProviderRequestOptions } from "../provider.js";
 import type { StreamResult } from "../stream.js";
 import { createStream } from "../stream.js";
 import type { StreamEvent } from "../stream.js";
+import {
+  mapHttpError,
+  AuthenticationError,
+  TimeoutError,
+  RateLimitError,
+} from "../errors.js";
 
 // ---------------------------------------------------------------------------
 // Anthropic API types (minimal subset)
@@ -57,6 +63,7 @@ interface AnthropicStreamEvent {
     type?: string;
     text?: string;
     partial_json?: string;
+    stop_reason?: string;
   };
   index?: number;
   content_block?: AnthropicContent;
@@ -179,6 +186,32 @@ function parseAnthropicUsage(usage: { input_tokens: number; output_tokens: numbe
   };
 }
 
+/**
+ * Parse Anthropic rate limit headers.
+ */
+function parseRateLimitHeaders(headers: Headers): { retryAfter?: number } {
+  // Anthropic sends x-ratelimit-limit-requests, x-ratelimit-remaining-requests,
+  // x-ratelimit-reset-requests, and similar for tokens
+  const resetRequests = headers.get("x-ratelimit-reset-requests");
+  const retryAfter = headers.get("retry-after");
+
+  let retryAfterSec: number | undefined;
+
+  if (retryAfter) {
+    const parsed = Number(retryAfter);
+    if (Number.isFinite(parsed)) retryAfterSec = parsed;
+  } else if (resetRequests) {
+    // Parse duration like "1s", "500ms"
+    const match = resetRequests.match(/^(\d+(?:\.\d+)?)(s|ms)?$/);
+    if (match) {
+      const value = parseFloat(match[1]);
+      retryAfterSec = match[2] === "ms" ? value / 1000 : value;
+    }
+  }
+
+  return { retryAfter: retryAfterSec };
+}
+
 // ---------------------------------------------------------------------------
 // Provider
 // ---------------------------------------------------------------------------
@@ -201,11 +234,23 @@ export class AnthropicProvider implements ModelProvider {
   private getApiKey(options: ProviderRequestOptions): string {
     const key = options.apiKey ?? process.env.ANTHROPIC_API_KEY;
     if (!key) {
-      throw new Error(
+      throw new AuthenticationError(
         "Anthropic API key is required. Set ANTHROPIC_API_KEY environment variable or pass apiKey in config.",
+        { provider: "anthropic" },
       );
     }
     return key;
+  }
+
+  private handleErrorResponse(status: number, body: string, headers: Headers): never {
+    if (status === 429) {
+      const { retryAfter } = parseRateLimitHeaders(headers);
+      throw new RateLimitError(
+        `Anthropic rate limit exceeded (429): ${body}`,
+        { retryAfter, provider: "anthropic" },
+      );
+    }
+    throw mapHttpError(status, body, "Anthropic", headers);
   }
 
   async generate(
@@ -242,11 +287,12 @@ export class AnthropicProvider implements ModelProvider {
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify(body),
+      signal: options.signal,
     });
 
     if (!response.ok) {
       const errText = await response.text();
-      throw new Error(`Anthropic API error (${response.status}): ${errText}`);
+      this.handleErrorResponse(response.status, errText, response.headers);
     }
 
     const reader = response.body?.getReader();
@@ -254,7 +300,7 @@ export class AnthropicProvider implements ModelProvider {
       throw new Error("Anthropic streaming response has no body.");
     }
 
-    return createStream(this.parseSSEStream(reader));
+    return createStream(this.parseSSEStream(reader, options.signal));
   }
 
   async generateWithTools(
@@ -293,11 +339,12 @@ export class AnthropicProvider implements ModelProvider {
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify(body),
+      signal: options.signal,
     });
 
     if (!response.ok) {
       const errText = await response.text();
-      throw new Error(`Anthropic API error (${response.status}): ${errText}`);
+      this.handleErrorResponse(response.status, errText, response.headers);
     }
 
     const data = (await response.json()) as AnthropicResponse;
@@ -312,16 +359,35 @@ export class AnthropicProvider implements ModelProvider {
 
   private async *parseSSEStream(
     reader: ReadableStreamDefaultReader<Uint8Array>,
+    signal?: AbortSignal,
   ): AsyncGenerator<StreamEvent> {
     const decoder = new TextDecoder();
     let buffer = "";
     let currentToolCallId: string | undefined;
+    const streamTimeoutMs = 30_000;
+    let lastDataTime = Date.now();
 
     try {
       while (true) {
-        const { done, value } = await reader.read();
+        // Check abort signal
+        if (signal?.aborted) {
+          throw signal.reason ?? new Error("Aborted");
+        }
+
+        const readPromise = reader.read();
+        const timeoutPromise = new Promise<{ done: true; value: undefined }>((resolve) => {
+          const remaining = streamTimeoutMs - (Date.now() - lastDataTime);
+          setTimeout(() => resolve({ done: true, value: undefined }), Math.max(remaining, 0));
+        });
+
+        const { done, value } = await Promise.race([readPromise, timeoutPromise]);
+
+        if (done && value === undefined && (Date.now() - lastDataTime) >= streamTimeoutMs) {
+          throw new TimeoutError(`Anthropic stream timed out after ${streamTimeoutMs}ms of inactivity`);
+        }
         if (done) break;
 
+        lastDataTime = Date.now();
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split("\n");
         buffer = lines.pop() ?? "";

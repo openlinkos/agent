@@ -32,6 +32,8 @@ export interface ProviderRequestOptions {
   topP?: number;
   /** Response format specification for structured output. */
   responseFormat?: ResponseFormat;
+  /** AbortSignal to cancel in-flight requests. */
+  signal?: AbortSignal;
 }
 
 /**

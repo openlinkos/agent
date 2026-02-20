@@ -181,6 +181,16 @@ export interface TeamResult {
 }
 
 // ---------------------------------------------------------------------------
+// Team run options
+// ---------------------------------------------------------------------------
+
+/** Options for a single team run. */
+export interface TeamRunOptions {
+  /** AbortSignal to cancel the team run. */
+  signal?: AbortSignal;
+}
+
+// ---------------------------------------------------------------------------
 // Team interface
 // ---------------------------------------------------------------------------
 
@@ -191,5 +201,5 @@ export interface Team {
   /** The coordination mode. */
   readonly coordinationMode: CoordinationMode;
   /** Run the team on a given input task. */
-  run(input: string): Promise<TeamResult>;
+  run(input: string, options?: TeamRunOptions): Promise<TeamResult>;
 }

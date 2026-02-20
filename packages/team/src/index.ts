@@ -24,6 +24,7 @@ export type {
   TeamContext,
   TeamMessage,
   TeamResult,
+  TeamRunOptions,
   Team,
 } from "./types.js";
 

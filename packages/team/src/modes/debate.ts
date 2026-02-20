@@ -39,6 +39,7 @@ export async function runDebate(
   hooks: TeamHooks,
   judge?: Agent,
   debateRounds?: number,
+  signal?: AbortSignal,
 ): Promise<TeamResult> {
   const rounds = debateRounds ?? maxRounds;
   const allResults: AgentResponse[] = [];
@@ -48,6 +49,11 @@ export async function runDebate(
   const argumentHistory: Array<{ agentName: string; round: number; text: string }> = [];
 
   for (let round = 1; round <= rounds; round++) {
+    // Check abort signal between rounds
+    if (signal?.aborted) {
+      break;
+    }
+
     if (hooks.onRoundStart) {
       await hooks.onRoundStart(round);
     }
@@ -74,7 +80,7 @@ export async function runDebate(
 
       let response: AgentResponse;
       try {
-        response = await agent.run(debateInput);
+        response = await agent.run(debateInput, signal ? { signal } : undefined);
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
         if (hooks.onError) {
@@ -131,7 +137,7 @@ export async function runDebate(
 
     let judgeResponse: AgentResponse;
     try {
-      judgeResponse = await judge.run(judgeInput);
+      judgeResponse = await judge.run(judgeInput, signal ? { signal } : undefined);
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
       if (hooks.onError) {

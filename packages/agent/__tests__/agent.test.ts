@@ -202,8 +202,9 @@ describe("Agent.run", () => {
       maxIterations: 3,
     });
 
-    const response = await agent.run("Loop");
-    expect(response.steps.length).toBeLessThanOrEqual(3);
+    await expect(agent.run("Loop")).rejects.toThrow(
+      'Agent "loop-agent" reached maximum iterations (3)',
+    );
   });
 
   it("should handle unknown tool gracefully", async () => {

@@ -18,6 +18,11 @@ import type { ModelProvider, ProviderRequestOptions } from "../provider.js";
 import type { StreamResult } from "../stream.js";
 import { createStream } from "../stream.js";
 import type { StreamEvent } from "../stream.js";
+import {
+  mapHttpError,
+  AuthenticationError,
+  TimeoutError,
+} from "../errors.js";
 
 // ---------------------------------------------------------------------------
 // Gemini API types (minimal subset)
@@ -41,6 +46,12 @@ interface GeminiTool {
   }>;
 }
 
+interface GeminiSafetyRating {
+  category: string;
+  probability: string;
+  blocked?: boolean;
+}
+
 interface GeminiResponse {
   candidates: Array<{
     content: {
@@ -48,12 +59,26 @@ interface GeminiResponse {
       role: "model";
     };
     finishReason: string;
+    safetyRatings?: GeminiSafetyRating[];
+    citationMetadata?: {
+      citationSources?: Array<{
+        startIndex?: number;
+        endIndex?: number;
+        uri?: string;
+        license?: string;
+      }>;
+    };
   }>;
   usageMetadata?: {
     promptTokenCount: number;
     candidatesTokenCount: number;
     totalTokenCount: number;
   };
+}
+
+function isSafetyBlocked(ratings?: GeminiSafetyRating[]): boolean {
+  if (!ratings) return false;
+  return ratings.some((r) => r.blocked === true || r.probability === "HIGH");
 }
 
 // ---------------------------------------------------------------------------
@@ -203,8 +228,9 @@ export class GoogleProvider implements ModelProvider {
   private getApiKey(options: ProviderRequestOptions): string {
     const key = options.apiKey ?? process.env.GOOGLE_API_KEY;
     if (!key) {
-      throw new Error(
+      throw new AuthenticationError(
         "Google API key is required. Set GOOGLE_API_KEY environment variable or pass apiKey in config.",
+        { provider: "google" },
       );
     }
     return key;
@@ -248,11 +274,12 @@ export class GoogleProvider implements ModelProvider {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
+      signal: options.signal,
     });
 
     if (!response.ok) {
       const errText = await response.text();
-      throw new Error(`Google API error (${response.status}): ${errText}`);
+      throw mapHttpError(response.status, errText, "Google", response.headers);
     }
 
     const reader = response.body?.getReader();
@@ -260,7 +287,7 @@ export class GoogleProvider implements ModelProvider {
       throw new Error("Google streaming response has no body.");
     }
 
-    return createStream(this.parseSSEStream(reader));
+    return createStream(this.parseSSEStream(reader, options.signal));
   }
 
   async generateWithTools(
@@ -299,15 +326,26 @@ export class GoogleProvider implements ModelProvider {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
+      signal: options.signal,
     });
 
     if (!response.ok) {
       const errText = await response.text();
-      throw new Error(`Google API error (${response.status}): ${errText}`);
+      throw mapHttpError(response.status, errText, "Google", response.headers);
     }
 
     const data = (await response.json()) as GeminiResponse;
-    const candidate = data.candidates[0];
+    const candidate = data.candidates?.[0];
+
+    // Google may return no candidates if safety ratings block the response
+    if (!candidate || isSafetyBlocked(candidate.safetyRatings)) {
+      return {
+        text: null,
+        toolCalls: [],
+        usage: parseGeminiUsage(data.usageMetadata),
+        finishReason: "content_filter",
+      };
+    }
 
     return {
       text: parseGeminiText(candidate.content.parts),
@@ -319,15 +357,34 @@ export class GoogleProvider implements ModelProvider {
 
   private async *parseSSEStream(
     reader: ReadableStreamDefaultReader<Uint8Array>,
+    signal?: AbortSignal,
   ): AsyncGenerator<StreamEvent> {
     const decoder = new TextDecoder();
     let buffer = "";
+    const streamTimeoutMs = 30_000;
+    let lastDataTime = Date.now();
 
     try {
       while (true) {
-        const { done, value } = await reader.read();
+        // Check abort signal
+        if (signal?.aborted) {
+          throw signal.reason ?? new Error("Aborted");
+        }
+
+        const readPromise = reader.read();
+        const timeoutPromise = new Promise<{ done: true; value: undefined }>((resolve) => {
+          const remaining = streamTimeoutMs - (Date.now() - lastDataTime);
+          setTimeout(() => resolve({ done: true, value: undefined }), Math.max(remaining, 0));
+        });
+
+        const { done, value } = await Promise.race([readPromise, timeoutPromise]);
+
+        if (done && value === undefined && (Date.now() - lastDataTime) >= streamTimeoutMs) {
+          throw new TimeoutError(`Google stream timed out after ${streamTimeoutMs}ms of inactivity`);
+        }
         if (done) break;
 
+        lastDataTime = Date.now();
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split("\n");
         buffer = lines.pop() ?? "";
@@ -345,6 +402,13 @@ export class GoogleProvider implements ModelProvider {
           }
 
           const candidate = data.candidates?.[0];
+
+          // Handle safety ratings in streaming
+          if (candidate && isSafetyBlocked(candidate.safetyRatings)) {
+            yield { type: "done" };
+            return;
+          }
+
           if (candidate?.content?.parts) {
             for (const part of candidate.content.parts) {
               if ("text" in part) {

@@ -89,12 +89,13 @@ async function runWithTimeout(
   agent: AgentRole,
   input: string,
   timeoutMs: number | undefined,
+  signal?: AbortSignal,
 ): Promise<AgentOutcome> {
   const agentName = agent.agent.name;
 
   if (!timeoutMs) {
     try {
-      const response = await agent.agent.run(input);
+      const response = await agent.agent.run(input, signal ? { signal } : undefined);
       return { response, agentName };
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
@@ -105,7 +106,7 @@ async function runWithTimeout(
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     const response = await Promise.race<AgentResponse | "timeout">([
-      agent.agent.run(input),
+      agent.agent.run(input, signal ? { signal } : undefined),
       new Promise<"timeout">((resolve) => {
         timer = setTimeout(() => resolve("timeout"), timeoutMs);
       }),
@@ -142,6 +143,7 @@ export async function runParallel(
   aggregationStrategy: AggregationStrategy = "merge-all",
   customReducer?: (responses: AgentResponse[]) => string,
   agentTimeout?: number,
+  signal?: AbortSignal,
 ): Promise<TeamResult> {
   if (hooks.onRoundStart) {
     await hooks.onRoundStart(1);
@@ -156,7 +158,7 @@ export async function runParallel(
 
   // Run all agents in parallel
   const outcomes = await Promise.all(
-    agents.map((a) => runWithTimeout(a, input, agentTimeout)),
+    agents.map((a) => runWithTimeout(a, input, agentTimeout, signal)),
   );
 
   // Collect successful results

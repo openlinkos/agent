@@ -61,6 +61,7 @@ export async function runSupervisor(
   maxRounds: number,
   hooks: TeamHooks,
   supervisorAgent?: Agent,
+  signal?: AbortSignal,
 ): Promise<TeamResult> {
   // Determine supervisor and workers
   const supervisor = supervisorAgent ?? agents[0]?.agent;
@@ -94,6 +95,11 @@ export async function runSupervisor(
     `Task: ${input}`;
 
   for (let round = 1; round <= maxRounds; round++) {
+    // Check abort signal between rounds
+    if (signal?.aborted) {
+      break;
+    }
+
     if (hooks.onRoundStart) {
       await hooks.onRoundStart(round);
     }
@@ -105,7 +111,7 @@ export async function runSupervisor(
 
     let supervisorResponse: AgentResponse;
     try {
-      supervisorResponse = await supervisor.run(supervisorInput);
+      supervisorResponse = await supervisor.run(supervisorInput, signal ? { signal } : undefined);
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
       if (hooks.onError) {
@@ -172,7 +178,7 @@ export async function runSupervisor(
 
       let workerResponse: AgentResponse;
       try {
-        workerResponse = await worker.run(delegation.task);
+        workerResponse = await worker.run(delegation.task, signal ? { signal } : undefined);
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
         if (hooks.onError) {

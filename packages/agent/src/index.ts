@@ -15,6 +15,7 @@ export type {
   AgentHooks,
   AgentConfig,
   AgentResponse,
+  AgentRunOptions,
   Agent,
 } from "./types.js";
 
@@ -49,6 +50,12 @@ export {
   maxLengthGuardrail,
   regexBlockFilter,
 } from "./guardrails.js";
+
+// --- Errors ---
+export type { AgentErrorCode } from "./errors.js";
+export { MaxIterationsError } from "./errors.js";
+// Re-export shared errors from @openlinkos/ai
+export { BaseError, ToolExecutionError, GuardrailError, AbortError } from "@openlinkos/ai";
 
 // --- Agent engine ---
 export { createAgentEngine } from "./agent.js";

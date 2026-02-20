@@ -12,12 +12,15 @@ import type {
   Usage,
   ToolDefinition as AIToolDefinition,
 } from "@openlinkos/ai";
+import { AbortError, GuardrailError } from "@openlinkos/ai";
 import type {
   AgentConfig,
   AgentResponse,
   AgentStep,
+  AgentRunOptions,
   Agent,
 } from "./types.js";
+import { MaxIterationsError } from "./errors.js";
 import { ToolRegistry, executeTool, validateParameters } from "./tools.js";
 import {
   runInputGuardrails,
@@ -85,7 +88,14 @@ export function createAgentEngine(config: AgentConfig): Agent {
   return {
     name,
 
-    async run(input: string): Promise<AgentResponse> {
+    async run(input: string, runOptions?: AgentRunOptions): Promise<AgentResponse> {
+      const signal = runOptions?.signal;
+
+      // Check abort before starting
+      if (signal?.aborted) {
+        throw new AbortError("Agent run was aborted before starting");
+      }
+
       // Notify start hook
       if (hooks.onStart) {
         await hooks.onStart(input);
@@ -101,7 +111,7 @@ export function createAgentEngine(config: AgentConfig): Agent {
           const inputCheck = await runInputGuardrails(inputGuardrails, input);
           if (!inputCheck.passed) {
             const errorMsg = inputCheck.reason ?? "Input guardrail failed";
-            throw new Error(errorMsg);
+            throw new GuardrailError(errorMsg, { guardrailName: "input" });
           }
         }
 
@@ -111,13 +121,20 @@ export function createAgentEngine(config: AgentConfig): Agent {
           { role: "user", content: input },
         ];
 
+        const modelRequestOptions = signal ? { signal } : undefined;
+
         for (let iteration = 0; iteration < maxIterations; iteration++) {
+          // Check abort signal between iterations
+          if (signal?.aborted) {
+            throw new AbortError("Agent run was aborted");
+          }
+
           // Generate model response
           let response: ModelResponse;
           if (hasTools) {
-            response = await model.generateWithTools(messages, toAITools(registry));
+            response = await model.generateWithTools(messages, toAITools(registry), undefined, modelRequestOptions);
           } else {
-            response = await model.generate(messages);
+            response = await model.generate(messages, undefined, modelRequestOptions);
           }
 
           totalUsage = addUsage(totalUsage, response.usage);
@@ -240,6 +257,16 @@ export function createAgentEngine(config: AgentConfig): Agent {
           }
         }
 
+        // Check if we hit max iterations without a final response
+        if (steps.length === maxIterations) {
+          const ls = steps[steps.length - 1];
+          if (ls && ls.toolCalls.length > 0) {
+            throw new MaxIterationsError(
+              `Agent "${name}" reached maximum iterations (${maxIterations}) without producing a final response`,
+            );
+          }
+        }
+
         // Extract final text from the last assistant message
         const lastStep = steps[steps.length - 1];
         let finalText = lastStep?.modelResponse.text ?? "";
@@ -249,7 +276,7 @@ export function createAgentEngine(config: AgentConfig): Agent {
           const outputCheck = await runOutputGuardrails(outputGuardrails, finalText);
           if (!outputCheck.passed) {
             const errorMsg = outputCheck.reason ?? "Output guardrail failed";
-            throw new Error(errorMsg);
+            throw new GuardrailError(errorMsg, { guardrailName: "output" });
           }
         }
 
@@ -257,7 +284,7 @@ export function createAgentEngine(config: AgentConfig): Agent {
         if (contentFilters.length > 0) {
           const filtered = await applyContentFilters(contentFilters, finalText);
           if (filtered === null) {
-            throw new Error("Content was blocked by content filter");
+            throw new GuardrailError("Content was blocked by content filter", { guardrailName: "content-filter" });
           }
           finalText = filtered;
         }

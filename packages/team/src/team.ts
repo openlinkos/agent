@@ -10,6 +10,7 @@ import type {
   Team,
   TeamResult,
   TeamHooks,
+  TeamRunOptions,
   ParallelConfig,
   DebateConfig,
   SupervisorConfig,
@@ -50,10 +51,11 @@ export function createTeam(config: TeamConfig): Team {
     name,
     coordinationMode,
 
-    async run(input: string): Promise<TeamResult> {
+    async run(input: string, runOptions?: TeamRunOptions): Promise<TeamResult> {
+      const signal = runOptions?.signal;
       switch (coordinationMode) {
         case "sequential":
-          return runSequential(agents, input, maxRounds, hooks);
+          return runSequential(agents, input, maxRounds, hooks, signal);
 
         case "parallel": {
           const pc = config as ParallelConfig;
@@ -65,17 +67,18 @@ export function createTeam(config: TeamConfig): Team {
             pc.aggregationStrategy,
             pc.customReducer,
             pc.agentTimeout,
+            signal,
           );
         }
 
         case "debate": {
           const dc = config as DebateConfig;
-          return runDebate(agents, input, maxRounds, hooks, dc.judge, dc.rounds);
+          return runDebate(agents, input, maxRounds, hooks, dc.judge, dc.rounds, signal);
         }
 
         case "supervisor": {
           const sc = config as SupervisorConfig;
-          return runSupervisor(agents, input, maxRounds, hooks, sc.supervisor);
+          return runSupervisor(agents, input, maxRounds, hooks, sc.supervisor, signal);
         }
 
         case "custom": {

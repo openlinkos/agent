@@ -8,6 +8,14 @@
 import type { Message, ModelResponse, ToolDefinition } from "./types.js";
 import type { ModelProvider, ProviderRequestOptions } from "./provider.js";
 import type { StreamResult } from "./stream.js";
+import {
+  RateLimitError,
+  ProviderError,
+  TimeoutError,
+  AbortError,
+  AuthenticationError,
+  InvalidRequestError,
+} from "./errors.js";
 
 // ---------------------------------------------------------------------------
 // Retry configuration
@@ -37,8 +45,25 @@ const DEFAULT_RETRY: Required<RetryOptions> = {
 /**
  * Default retryable error predicate.
  * Retries on HTTP 429 (rate limit) and 5xx server errors.
+ * Never retries on abort, auth, or invalid request errors.
  */
 export function defaultIsRetryable(error: unknown): boolean {
+  // Never retry aborts
+  if (error instanceof AbortError) return false;
+  // Never retry auth or invalid request errors
+  if (error instanceof AuthenticationError) return false;
+  if (error instanceof InvalidRequestError) return false;
+
+  // Always retry rate limits
+  if (error instanceof RateLimitError) return true;
+  // Always retry timeouts
+  if (error instanceof TimeoutError) return true;
+  // Retry server errors (5xx)
+  if (error instanceof ProviderError) {
+    const status = error.statusCode;
+    return status !== undefined && status >= 500 && status < 600;
+  }
+
   if (error instanceof Error) {
     const msg = error.message.toLowerCase();
     if (msg.includes("rate limit") || msg.includes("429")) return true;
@@ -76,6 +101,7 @@ function computeDelay(attempt: number, opts: Required<RetryOptions>): number {
 
 /**
  * Execute a function with exponential-backoff retry.
+ * Respects `retryAfter` on RateLimitError when available.
  */
 export async function withRetry<T>(
   fn: () => Promise<T>,
@@ -92,7 +118,13 @@ export async function withRetry<T>(
       if (attempt === opts.maxRetries || !opts.isRetryable(error)) {
         throw error;
       }
-      const delay = computeDelay(attempt, opts);
+      // If the error is a RateLimitError with retryAfter, use that
+      let delay: number;
+      if (error instanceof RateLimitError && error.retryAfter !== undefined && error.retryAfter > 0) {
+        delay = error.retryAfter * 1000; // retryAfter is in seconds
+      } else {
+        delay = computeDelay(attempt, opts);
+      }
       await sleep(delay);
     }
   }

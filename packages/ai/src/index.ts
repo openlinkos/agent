@@ -60,6 +60,21 @@ export {
   collectEvents,
 } from "./stream.js";
 
+// --- Errors ---
+export type { AIErrorCode } from "./errors.js";
+export {
+  BaseError,
+  ProviderError,
+  RateLimitError,
+  AuthenticationError,
+  TimeoutError,
+  InvalidRequestError,
+  ToolExecutionError,
+  GuardrailError,
+  AbortError,
+  mapHttpError,
+} from "./errors.js";
+
 // --- Retry & fallback ---
 export type {
   RetryOptions,
@@ -86,6 +101,14 @@ import type { StreamResult } from "./stream.js";
 import { parseModelId, getProvider } from "./provider.js";
 
 /**
+ * Options that can be passed to Model methods alongside config overrides.
+ */
+export interface ModelRequestOptions {
+  /** AbortSignal to cancel in-flight requests. */
+  signal?: AbortSignal;
+}
+
+/**
  * A high-level Model interface that wraps a provider and model name.
  */
 export interface Model {
@@ -93,16 +116,17 @@ export interface Model {
   readonly modelId: string;
 
   /** Generate a non-streaming response. */
-  generate(messages: Message[], config?: Partial<ModelConfig>): Promise<ModelResponse>;
+  generate(messages: Message[], config?: Partial<ModelConfig>, options?: ModelRequestOptions): Promise<ModelResponse>;
 
   /** Generate a streaming response. */
-  stream(messages: Message[], config?: Partial<ModelConfig>): Promise<StreamResult>;
+  stream(messages: Message[], config?: Partial<ModelConfig>, options?: ModelRequestOptions): Promise<StreamResult>;
 
   /** Generate with tools available. */
   generateWithTools(
     messages: Message[],
     tools: ToolDefinition[],
     config?: Partial<ModelConfig>,
+    options?: ModelRequestOptions,
   ): Promise<ModelResponse>;
 }
 
@@ -127,56 +151,41 @@ export interface Model {
 export function createModel(modelId: string, config?: Partial<ModelConfig>): Model {
   const { provider: providerName, modelName } = parseModelId(modelId);
 
+  function buildOptions(merged: Partial<ModelConfig>, reqOpts?: ModelRequestOptions) {
+    return {
+      modelName,
+      apiKey: merged.apiKey,
+      temperature: merged.temperature,
+      maxTokens: merged.maxTokens,
+      baseURL: merged.baseURL,
+      stop: merged.stop,
+      topP: merged.topP,
+      responseFormat: merged.responseFormat,
+      signal: reqOpts?.signal,
+    };
+  }
+
   return {
     modelId,
 
-    async generate(messages: Message[], overrides?: Partial<ModelConfig>): Promise<ModelResponse> {
+    async generate(messages: Message[], overrides?: Partial<ModelConfig>, options?: ModelRequestOptions): Promise<ModelResponse> {
       const provider = getProvider(providerName);
-      const merged = { ...config, ...overrides };
-      return provider.generate(messages, {
-        modelName,
-        apiKey: merged.apiKey,
-        temperature: merged.temperature,
-        maxTokens: merged.maxTokens,
-        baseURL: merged.baseURL,
-        stop: merged.stop,
-        topP: merged.topP,
-        responseFormat: merged.responseFormat,
-      });
+      return provider.generate(messages, buildOptions({ ...config, ...overrides }, options));
     },
 
-    async stream(messages: Message[], overrides?: Partial<ModelConfig>): Promise<StreamResult> {
+    async stream(messages: Message[], overrides?: Partial<ModelConfig>, options?: ModelRequestOptions): Promise<StreamResult> {
       const provider = getProvider(providerName);
-      const merged = { ...config, ...overrides };
-      return provider.stream(messages, {
-        modelName,
-        apiKey: merged.apiKey,
-        temperature: merged.temperature,
-        maxTokens: merged.maxTokens,
-        baseURL: merged.baseURL,
-        stop: merged.stop,
-        topP: merged.topP,
-        responseFormat: merged.responseFormat,
-      });
+      return provider.stream(messages, buildOptions({ ...config, ...overrides }, options));
     },
 
     async generateWithTools(
       messages: Message[],
       tools: ToolDefinition[],
       overrides?: Partial<ModelConfig>,
+      options?: ModelRequestOptions,
     ): Promise<ModelResponse> {
       const provider = getProvider(providerName);
-      const merged = { ...config, ...overrides };
-      return provider.generateWithTools(messages, tools, {
-        modelName,
-        apiKey: merged.apiKey,
-        temperature: merged.temperature,
-        maxTokens: merged.maxTokens,
-        baseURL: merged.baseURL,
-        stop: merged.stop,
-        topP: merged.topP,
-        responseFormat: merged.responseFormat,
-      });
+      return provider.generateWithTools(messages, tools, buildOptions({ ...config, ...overrides }, options));
     },
   };
 }
