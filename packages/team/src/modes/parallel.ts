@@ -102,12 +102,13 @@ async function runWithTimeout(
     }
   }
 
+  let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     const response = await Promise.race<AgentResponse | "timeout">([
       agent.agent.run(input),
-      new Promise<"timeout">((resolve) =>
-        setTimeout(() => resolve("timeout"), timeoutMs),
-      ),
+      new Promise<"timeout">((resolve) => {
+        timer = setTimeout(() => resolve("timeout"), timeoutMs);
+      }),
     ]);
 
     if (response === "timeout") {
@@ -121,6 +122,8 @@ async function runWithTimeout(
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     return { response: null, error: errorMsg, agentName };
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
   }
 }
 

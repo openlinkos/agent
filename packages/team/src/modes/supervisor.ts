@@ -27,7 +27,7 @@ interface Delegation {
   task: string;
 }
 
-const DELEGATE_PATTERN = /\[DELEGATE:\s*([^\]]+)\]\s*(.+)/g;
+const DELEGATE_PATTERN = /\[DELEGATE:\s*([^\]]+)\]\s*(.+)/;
 const FINAL_PATTERN = /\[FINAL\]\s*([\s\S]*)/;
 
 function parseDelegations(text: string): Delegation[] {
