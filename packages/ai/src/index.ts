@@ -87,6 +87,15 @@ export {
   createFallback,
 } from "./retry.js";
 
+// --- Rate limiter ---
+export {
+  TokenBucket,
+  TokenBudget,
+  RateLimiter,
+  createRateLimitedModel,
+} from "./rate-limiter.js";
+export type { RateLimiterConfig } from "./rate-limiter.js";
+
 // --- Structured output ---
 export { generateObject, validateSchema } from "./structured.js";
 export type {
