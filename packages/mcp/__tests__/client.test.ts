@@ -75,16 +75,17 @@ function createClientWithMock(
 // ---------------------------------------------------------------------------
 
 describe("MCPClient", () => {
-  it("should connect and send initialize request", async () => {
+  it("should connect and send initialize request followed by initialized notification", async () => {
     const { client, transport } = createClientWithMock();
 
     await client.connect();
 
     expect(client.connected).toBe(true);
-    expect(transport.sentRequests).toHaveLength(1);
+    expect(transport.sentRequests).toHaveLength(2);
     expect(transport.sentRequests[0].method).toBe("initialize");
     expect(transport.sentRequests[0].params).toHaveProperty("protocolVersion");
     expect(transport.sentRequests[0].params).toHaveProperty("clientInfo");
+    expect(transport.sentRequests[1].method).toBe("notifications/initialized");
 
     await client.disconnect();
   });

@@ -26,13 +26,14 @@ import type {
 export class StdioTransport implements TransportHandler {
   private process: ReturnType<typeof import("child_process").spawn> | null = null;
   private _connected = false;
-  private pending = new Map<number, { resolve: (v: MCPResponse) => void; reject: (e: Error) => void }>();
+  private pending = new Map<number, { resolve: (v: MCPResponse) => void; reject: (e: Error) => void; timer: ReturnType<typeof setTimeout> }>();
   private buffer = "";
 
   constructor(
     private readonly command: string,
     private readonly args: string[] = [],
     private readonly env?: Record<string, string>,
+    private readonly requestTimeout: number = 30_000,
   ) {}
 
   get connected(): boolean {
@@ -55,13 +56,20 @@ export class StdioTransport implements TransportHandler {
     this.process.on("error", (err) => {
       this._connected = false;
       for (const [, pending] of this.pending) {
+        clearTimeout(pending.timer);
         pending.reject(err);
       }
       this.pending.clear();
     });
 
-    this.process.on("exit", () => {
+    this.process.on("exit", (code) => {
       this._connected = false;
+      const exitError = new Error(`MCP server process exited with code ${code ?? "unknown"}`);
+      for (const [, pending] of this.pending) {
+        clearTimeout(pending.timer);
+        pending.reject(exitError);
+      }
+      this.pending.clear();
     });
 
     this._connected = true;
@@ -79,6 +87,7 @@ export class StdioTransport implements TransportHandler {
         const response = JSON.parse(trimmed) as MCPResponse;
         const pending = this.pending.get(response.id);
         if (pending) {
+          clearTimeout(pending.timer);
           this.pending.delete(response.id);
           pending.resolve(response);
         }
@@ -94,7 +103,12 @@ export class StdioTransport implements TransportHandler {
     }
 
     return new Promise<MCPResponse>((resolve, reject) => {
-      this.pending.set(message.id, { resolve, reject });
+      const timer = setTimeout(() => {
+        this.pending.delete(message.id);
+        reject(new Error(`Request ${message.method} (id=${message.id}) timed out after ${this.requestTimeout}ms`));
+      }, this.requestTimeout);
+
+      this.pending.set(message.id, { resolve, reject, timer });
       this.process!.stdin!.write(JSON.stringify(message) + "\n");
     });
   }
@@ -105,6 +119,9 @@ export class StdioTransport implements TransportHandler {
       this.process = null;
     }
     this._connected = false;
+    for (const [, pending] of this.pending) {
+      clearTimeout(pending.timer);
+    }
     this.pending.clear();
   }
 }
@@ -216,6 +233,7 @@ export class MCPClient implements MCPClientInterface {
           config.server,
           config.args,
           config.env,
+          config.requestTimeout,
         );
         break;
       case "sse":
@@ -247,6 +265,9 @@ export class MCPClient implements MCPClientInterface {
         version: "0.1.0",
       },
     });
+
+    // Send initialized notification per MCP spec
+    await this.sendNotification("notifications/initialized");
   }
 
   async listTools(): Promise<MCPTool[]> {
@@ -297,6 +318,31 @@ export class MCPClient implements MCPClientInterface {
     };
 
     return this.transport.send(request);
+  }
+
+  /**
+   * Send a JSON-RPC notification (no id, no response expected).
+   * Per MCP spec, notifications like "notifications/initialized" are fire-and-forget.
+   */
+  private async sendNotification(method: string, params?: Record<string, unknown>): Promise<void> {
+    // Notifications in JSON-RPC 2.0 have no id and expect no response.
+    // We use the transport's send but with a synthetic id, then ignore the response.
+    // A cleaner approach would be a separate write-only method, but for compatibility
+    // with the current TransportHandler interface we fire-and-forget a request.
+    const id = ++this.requestId;
+    const notification: MCPRequest = {
+      jsonrpc: "2.0",
+      id,
+      method,
+      params: params ?? {},
+    };
+
+    // Best-effort: don't fail connect() if notification delivery fails
+    try {
+      await this.transport.send(notification);
+    } catch {
+      // Notifications are fire-and-forget; swallow errors
+    }
   }
 }
 
