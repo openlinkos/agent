@@ -141,6 +141,7 @@ export function createModel(modelId: string, config?: Partial<ModelConfig>): Mod
         baseURL: merged.baseURL,
         stop: merged.stop,
         topP: merged.topP,
+        responseFormat: merged.responseFormat,
       });
     },
 
@@ -155,6 +156,7 @@ export function createModel(modelId: string, config?: Partial<ModelConfig>): Mod
         baseURL: merged.baseURL,
         stop: merged.stop,
         topP: merged.topP,
+        responseFormat: merged.responseFormat,
       });
     },
 
@@ -173,6 +175,7 @@ export function createModel(modelId: string, config?: Partial<ModelConfig>): Mod
         baseURL: merged.baseURL,
         stop: merged.stop,
         topP: merged.topP,
+        responseFormat: merged.responseFormat,
       });
     },
   };

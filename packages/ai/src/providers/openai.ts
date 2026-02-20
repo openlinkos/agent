@@ -328,14 +328,14 @@ export class OpenAIProvider implements ModelProvider {
           if (delta?.tool_calls) {
             for (const tc of delta.tool_calls) {
               if (tc.id) {
+                // During streaming, arguments arrive as partial JSON fragments
+                // that cannot be reliably parsed until the stream is complete.
+                // Emit the raw fragment so consumers can accumulate and parse later.
                 yield {
                   type: "tool_call_delta",
                   toolCall: {
                     id: tc.id,
                     name: tc.function?.name,
-                    arguments: tc.function?.arguments
-                      ? (JSON.parse(tc.function.arguments) as Record<string, unknown>)
-                      : undefined,
                   },
                 };
               }

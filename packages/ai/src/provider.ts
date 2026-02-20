@@ -9,6 +9,7 @@ import type {
   ModelResponse,
   ToolDefinition,
   ModelCapabilities,
+  ResponseFormat,
 } from "./types.js";
 import type { StreamResult } from "./stream.js";
 
@@ -29,6 +30,8 @@ export interface ProviderRequestOptions {
   baseURL?: string;
   stop?: string[];
   topP?: number;
+  /** Response format specification for structured output. */
+  responseFormat?: ResponseFormat;
 }
 
 /**

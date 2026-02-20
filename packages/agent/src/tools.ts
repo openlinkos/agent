@@ -173,10 +173,16 @@ export async function executeTool(
   params: Record<string, unknown>,
   timeoutMs: number = 30_000,
 ): Promise<{ result: string; error?: string }> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     const result = await Promise.race([
       tool.execute(params),
-      createTimeout(timeoutMs, tool.name),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error(`Tool "${tool.name}" timed out after ${timeoutMs}ms`)),
+          timeoutMs,
+        );
+      }),
     ]);
 
     // Serialize the result to a string
@@ -185,14 +191,9 @@ export async function executeTool(
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return { result: "", error: message };
+  } finally {
+    if (timer !== undefined) {
+      clearTimeout(timer);
+    }
   }
-}
-
-function createTimeout(ms: number, toolName: string): Promise<never> {
-  return new Promise((_, reject) => {
-    setTimeout(
-      () => reject(new Error(`Tool "${toolName}" timed out after ${ms}ms`)),
-      ms,
-    );
-  });
 }
