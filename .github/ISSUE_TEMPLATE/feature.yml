@@ -1,0 +1,43 @@
+name: Feature Implementation
+description: Implement a new feature or package
+title: "[Feature] "
+labels: ["feature"]
+body:
+  - type: markdown
+    attributes:
+      value: "## Feature Implementation Request"
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Brief description of the feature
+    validations:
+      required: true
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: Why is this needed? What problem does it solve?
+    validations:
+      required: true
+  - type: textarea
+    id: design
+    attributes:
+      label: Technical Design
+      description: "Files to create/modify, API surface, key implementation details"
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      description: "What tests must pass? What behavior is expected?"
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: "Other packages or issues this depends on"
+    validations:
+      required: false

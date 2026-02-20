@@ -1,0 +1,26 @@
+name: Code Review
+description: Request code review for completed implementation
+title: "[Review] "
+labels: ["review"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What was implemented?
+    validations:
+      required: true
+  - type: textarea
+    id: checklist
+    attributes:
+      label: Review Checklist
+      description: What should be checked?
+    validations:
+      required: true
+  - type: textarea
+    id: test-results
+    attributes:
+      label: Test Results
+      description: "Test count, pass rate, coverage notes"
+    validations:
+      required: true
