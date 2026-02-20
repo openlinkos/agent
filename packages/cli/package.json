@@ -1,0 +1,41 @@
+{
+  "name": "@openlinkos/cli",
+  "version": "0.1.0",
+  "description": "OpenLinkOS CLI — Command-line tool for running, chatting with, and scaffolding agents",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "openlinkos": "dist/cli.mjs"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@openlinkos/ai": "workspace:*",
+    "@openlinkos/agent": "workspace:*",
+    "@openlinkos/team": "workspace:*",
+    "commander": "^12.1.0",
+    "dotenv": "^16.4.0"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/openlinkos/agent.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://openlinkos.com",
+  "keywords": ["openlinkos", "cli", "agent", "ai", "llm"]
+}
