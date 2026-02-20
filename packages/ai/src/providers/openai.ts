@@ -330,7 +330,7 @@ export class OpenAIProvider implements ModelProvider {
   ): AsyncGenerator<StreamEvent> {
     const decoder = new TextDecoder();
     let buffer = "";
-    let streamTimeoutMs = 30_000;
+    const streamTimeoutMs = 30_000;
     let lastDataTime = Date.now();
 
     try {

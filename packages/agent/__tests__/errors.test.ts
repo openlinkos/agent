@@ -6,7 +6,7 @@ import { describe, it, expect, vi } from "vitest";
 import { MaxIterationsError } from "../src/errors.js";
 import { createAgentEngine } from "../src/agent.js";
 import { GuardrailError, AbortError, BaseError } from "@openlinkos/ai";
-import type { Model, Message, ModelResponse, ToolCall, ToolDefinition as AIToolDef } from "@openlinkos/ai";
+import type { Model, Message, ModelResponse, ToolCall, ToolDefinition as AIToolDef, FinishReason } from "@openlinkos/ai";
 import type { StreamResult } from "@openlinkos/ai";
 import type { InputGuardrail, OutputGuardrail } from "../src/guardrails.js";
 
@@ -34,7 +34,7 @@ function createMockModel(
         text: r.text,
         toolCalls: r.toolCalls ?? [],
         usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 },
-        finishReason: (r.finishReason ?? "stop") as any,
+        finishReason: (r.finishReason ?? "stop") as FinishReason,
       };
     },
     async stream(): Promise<StreamResult> {
@@ -51,7 +51,7 @@ function createMockModel(
         text: r.text,
         toolCalls: r.toolCalls ?? [],
         usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 },
-        finishReason: (r.finishReason ?? "stop") as any,
+        finishReason: (r.finishReason ?? "stop") as FinishReason,
       };
     },
   };
