@@ -27,44 +27,73 @@ export default defineConfig({
     siteTitle: "OpenLinkOS",
 
     nav: [
-      { text: "Guide", link: "/guide/getting-started" },
-      { text: "Concepts", link: "/concepts/plugins" },
+      { text: "Guide", link: "/guide/" },
       {
-        text: "Packages",
+        text: "API Reference",
         items: [
-          { text: "@openlinkos/ai", link: "/packages/ai" },
-          { text: "@openlinkos/agent", link: "/packages/agent" },
-          { text: "@openlinkos/subagent", link: "/packages/subagent" },
-          { text: "@openlinkos/team", link: "/packages/team" },
-          { text: "@openlinkos/mcp", link: "/packages/mcp" },
+          { text: "@openlinkos/ai", link: "/api/ai" },
+          { text: "@openlinkos/agent", link: "/api/agent" },
+          { text: "@openlinkos/team", link: "/api/team" },
+          { text: "@openlinkos/subagent", link: "/api/subagent" },
+          { text: "@openlinkos/mcp", link: "/api/mcp" },
+          { text: "@openlinkos/eval", link: "/api/eval" },
+          { text: "Channels", link: "/api/channels" },
+          { text: "plugin-memory", link: "/api/memory" },
         ],
       },
+      { text: "Examples", link: "/examples/chatbot" },
       {
         text: "GitHub",
         link: "https://github.com/openlinkos/agent",
       },
     ],
 
-    sidebar: [
-      {
-        text: "Guide",
-        items: [
-          {
-            text: "Getting Started",
-            link: "/guide/getting-started",
-          },
-        ],
-      },
-      {
-        text: "Concepts",
-        items: [
-          { text: "Plugins", link: "/concepts/plugins" },
-          { text: "Skills", link: "/concepts/skills" },
-          { text: "Sub-agents", link: "/concepts/subagents" },
-          { text: "Teams", link: "/concepts/teams" },
-        ],
-      },
-    ],
+    sidebar: {
+      "/guide/": [
+        {
+          text: "Getting Started",
+          items: [
+            { text: "Overview", link: "/guide/" },
+            { text: "Your First Agent", link: "/guide/first-agent" },
+            { text: "Adding Tools", link: "/guide/tools" },
+            { text: "Multi-Agent Teams", link: "/guide/teams" },
+            { text: "CLI Usage", link: "/guide/cli" },
+          ],
+        },
+      ],
+      "/api/": [
+        {
+          text: "Core",
+          items: [
+            { text: "@openlinkos/ai", link: "/api/ai" },
+            { text: "@openlinkos/agent", link: "/api/agent" },
+            { text: "@openlinkos/team", link: "/api/team" },
+            { text: "@openlinkos/subagent", link: "/api/subagent" },
+          ],
+        },
+        {
+          text: "Integrations",
+          items: [
+            { text: "@openlinkos/mcp", link: "/api/mcp" },
+            { text: "@openlinkos/eval", link: "/api/eval" },
+            { text: "Channels", link: "/api/channels" },
+            { text: "plugin-memory", link: "/api/memory" },
+          ],
+        },
+      ],
+      "/examples/": [
+        {
+          text: "Examples",
+          items: [
+            { text: "Basic Chatbot", link: "/examples/chatbot" },
+            { text: "Tool-Using Agent", link: "/examples/tool-agent" },
+            { text: "Multi-Agent Debate", link: "/examples/debate" },
+            { text: "Supervisor Pattern", link: "/examples/supervisor" },
+            { text: "MCP Integration", link: "/examples/mcp" },
+          ],
+        },
+      ],
+    },
 
     socialLinks: [
       { icon: "github", link: "https://github.com/openlinkos/agent" },
