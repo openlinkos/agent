@@ -5,6 +5,7 @@ export default defineConfig({
     include: [
       "packages/*/__tests__/**/*.test.ts",
       "channels/*/__tests__/**/*.test.ts",
+      "plugins/*/__tests__/**/*.test.ts",
     ],
     globals: false,
     testTimeout: 10_000,
