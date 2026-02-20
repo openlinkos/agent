@@ -60,6 +60,31 @@ export { BaseError, ToolExecutionError, GuardrailError, AbortError } from "@open
 // --- Agent engine ---
 export { createAgentEngine } from "./agent.js";
 
+// --- Conversation ---
+export { Conversation, createConversation } from "./conversation.js";
+export type { ConversationOptions } from "./conversation.js";
+
+// --- Context window ---
+export {
+  CharBasedTokenCounter,
+  SlidingWindowStrategy,
+} from "./context-window.js";
+export type {
+  TokenCounter,
+  SlidingWindowOptions,
+} from "./context-window.js";
+
+// --- Session ---
+export { SessionManager } from "./session.js";
+export type { SessionManagerOptions } from "./session.js";
+
+// --- Persistence ---
+export { InMemoryStore, FileStore } from "./persistence.js";
+export type {
+  ConversationStore,
+  ConversationData,
+} from "./persistence.js";
+
 // ---------------------------------------------------------------------------
 // Main factory
 // ---------------------------------------------------------------------------
