@@ -190,7 +190,7 @@ function parseUsage(usage?: { prompt_tokens: number; completion_tokens: number; 
 // ---------------------------------------------------------------------------
 
 export class OpenAIProvider implements ModelProvider {
-  readonly name = "openai";
+  readonly name: string = "openai";
 
   readonly capabilities: ModelCapabilities = {
     streaming: true,
@@ -200,11 +200,11 @@ export class OpenAIProvider implements ModelProvider {
     vision: true,
   };
 
-  private getBaseURL(options: ProviderRequestOptions): string {
+  protected getBaseURL(options: ProviderRequestOptions): string {
     return options.baseURL ?? "https://api.openai.com/v1";
   }
 
-  private getApiKey(options: ProviderRequestOptions): string {
+  protected getApiKey(options: ProviderRequestOptions): string {
     const key = options.apiKey ?? process.env.OPENAI_API_KEY;
     if (!key) {
       throw new AuthenticationError(
@@ -213,6 +213,11 @@ export class OpenAIProvider implements ModelProvider {
       );
     }
     return key;
+  }
+
+  /** Provider label used in error messages. Subclasses override this. */
+  protected get providerLabel(): string {
+    return "OpenAI";
   }
 
   async generate(
@@ -251,12 +256,12 @@ export class OpenAIProvider implements ModelProvider {
 
     if (!response.ok) {
       const errText = await response.text();
-      throw mapHttpError(response.status, errText, "OpenAI", response.headers);
+      throw mapHttpError(response.status, errText, this.providerLabel, response.headers);
     }
 
     const reader = response.body?.getReader();
     if (!reader) {
-      throw new Error("OpenAI streaming response has no body.");
+      throw new Error(`${this.providerLabel} streaming response has no body.`);
     }
 
     return createStream(this.parseSSEStream(reader, options.signal));
@@ -300,7 +305,7 @@ export class OpenAIProvider implements ModelProvider {
 
     if (!response.ok) {
       const errText = await response.text();
-      throw mapHttpError(response.status, errText, "OpenAI", response.headers);
+      throw mapHttpError(response.status, errText, this.providerLabel, response.headers);
     }
 
     const data = (await response.json()) as OpenAIChatResponse;
@@ -345,7 +350,7 @@ export class OpenAIProvider implements ModelProvider {
         const { done, value } = await Promise.race([readPromise, timeoutPromise]);
 
         if (done && value === undefined && (Date.now() - lastDataTime) >= streamTimeoutMs) {
-          throw new TimeoutError(`OpenAI stream timed out after ${streamTimeoutMs}ms of inactivity`);
+          throw new TimeoutError(`${this.providerLabel} stream timed out after ${streamTimeoutMs}ms of inactivity`);
         }
         if (done) break;
 

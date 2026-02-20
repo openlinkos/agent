@@ -29,6 +29,7 @@ jobs:
       - name: Run E2E tests
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
         run: pnpm test -- --reporter=json --outputFile=e2e-results.json
 
       - name: Upload E2E results
