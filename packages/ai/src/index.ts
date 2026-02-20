@@ -102,6 +102,14 @@ export { DeepSeekProvider, createDeepSeekProvider } from "./providers/deepseek.j
 export { QwenProvider, createQwenProvider } from "./providers/qwen.js";
 export { OllamaProvider, createOllamaProvider } from "./providers/ollama.js";
 
+// --- Server ---
+export { createAgentServer } from "./server.js";
+export type {
+  ServerAgent,
+  ServerAgentResponse,
+  AgentServerOptions,
+} from "./server.js";
+
 // ---------------------------------------------------------------------------
 // Model factory
 // ---------------------------------------------------------------------------

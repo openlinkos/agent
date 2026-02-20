@@ -127,6 +127,14 @@ export type {
 export { agentAsTool, getCurrentDepth, resetDepth } from "./agent-tool.js";
 export type { AgentAsToolOptions } from "./agent-tool.js";
 
+// --- Tool composition ---
+export {
+  composeTool,
+  conditionalTool,
+  toolGroup,
+  retryTool,
+} from "./tool-compose.js";
+
 // --- Conversation ---
 export { Conversation, createConversation } from "./conversation.js";
 export type { ConversationOptions } from "./conversation.js";
