@@ -57,6 +57,34 @@ export { MaxIterationsError } from "./errors.js";
 // Re-export shared errors from @openlinkos/ai
 export { BaseError, ToolExecutionError, GuardrailError, AbortError } from "@openlinkos/ai";
 
+// --- Middleware ---
+export { MiddlewareStack } from "./middleware.js";
+export type {
+  Middleware,
+  NextFn,
+  BeforeGenerateContext,
+  AfterGenerateContext,
+  BeforeToolCallContext,
+  AfterToolCallContext,
+  ErrorContext,
+} from "./middleware.js";
+
+// --- Built-in middlewares ---
+export {
+  createLoggingMiddleware,
+  createCachingMiddleware,
+  createCostTrackingMiddleware,
+} from "./middlewares/index.js";
+export type {
+  LoggingOptions,
+  CachingOptions,
+  CostPricing,
+  CostSnapshot,
+} from "./middlewares/index.js";
+
+// --- Plugin ---
+export type { Plugin } from "./plugin.js";
+
 // --- Agent engine ---
 export { createAgentEngine } from "./agent.js";
 

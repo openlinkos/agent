@@ -7,6 +7,8 @@
 
 import type { Model, ModelResponse, ToolCall, Usage } from "@openlinkos/ai";
 import type { InputGuardrail, OutputGuardrail, ContentFilter } from "./guardrails.js";
+import type { Middleware } from "./middleware.js";
+import type { Plugin } from "./plugin.js";
 
 // ---------------------------------------------------------------------------
 // Tool definition (with execute function)
@@ -96,6 +98,10 @@ export interface AgentConfig {
   outputGuardrails?: OutputGuardrail[];
   /** Content filters applied to the final response text. */
   contentFilters?: ContentFilter[];
+  /** Middleware stack executed at each stage of the ReAct loop. */
+  middlewares?: Middleware[];
+  /** Plugins to install (bundles of middleware and tools). */
+  plugins?: Plugin[];
 }
 
 // ---------------------------------------------------------------------------
@@ -136,6 +142,8 @@ export interface Agent {
   readonly name: string;
   /** Run the agent with the given user input. */
   run(input: string, options?: AgentRunOptions): Promise<AgentResponse>;
+  /** Install a plugin (registers its middleware and tools). */
+  use(plugin: Plugin): Promise<void>;
 }
 
 // Re-export Model-related types from @openlinkos/ai for convenience

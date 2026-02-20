@@ -3,6 +3,9 @@
  *
  * Implements the ReAct (Reason + Act) loop:
  *   think → tool call → observe → repeat until done or max iterations.
+ *
+ * Supports a middleware stack that intercepts each lifecycle stage
+ * (beforeGenerate, afterGenerate, beforeToolCall, afterToolCall, onError).
  */
 
 import type {
@@ -27,6 +30,8 @@ import {
   runOutputGuardrails,
   applyContentFilters,
 } from "./guardrails.js";
+import { MiddlewareStack } from "./middleware.js";
+import type { Plugin } from "./plugin.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -75,6 +80,8 @@ export function createAgentEngine(config: AgentConfig): Agent {
     inputGuardrails = [],
     outputGuardrails = [],
     contentFilters = [],
+    middlewares = [],
+    plugins = [],
   } = config;
 
   // Build tool registry
@@ -83,12 +90,72 @@ export function createAgentEngine(config: AgentConfig): Agent {
     registry.register(tool);
   }
 
-  const hasTools = tools.length > 0;
+  // Build middleware stack
+  const mwStack = new MiddlewareStack();
+  for (const mw of middlewares) {
+    mwStack.use(mw);
+  }
+
+  // Track installed plugins for uninstall support
+  const installedPlugins = new Map<string, Plugin>();
+
+  // Install initial plugins synchronously (onInstall deferred)
+  const pendingPluginInstalls: Array<() => Promise<void>> = [];
+  for (const plugin of plugins) {
+    if (plugin.middlewares) {
+      for (const mw of plugin.middlewares) {
+        mwStack.use(mw);
+      }
+    }
+    if (plugin.tools) {
+      for (const tool of plugin.tools) {
+        registry.register(tool);
+      }
+    }
+    installedPlugins.set(plugin.name, plugin);
+    if (plugin.onInstall) {
+      const fn = plugin.onInstall;
+      pendingPluginInstalls.push(async () => fn());
+    }
+  }
+
+  // Run pending onInstall callbacks on first run
+  let pluginsInitialized = false;
+  async function ensurePluginsInitialized(): Promise<void> {
+    if (pluginsInitialized) return;
+    pluginsInitialized = true;
+    for (const fn of pendingPluginInstalls) {
+      await fn();
+    }
+    pendingPluginInstalls.length = 0;
+  }
 
   return {
     name,
 
+    async use(plugin: Plugin): Promise<void> {
+      if (installedPlugins.has(plugin.name)) {
+        throw new Error(`Plugin "${plugin.name}" is already installed.`);
+      }
+      if (plugin.middlewares) {
+        for (const mw of plugin.middlewares) {
+          mwStack.use(mw);
+        }
+      }
+      if (plugin.tools) {
+        for (const tool of plugin.tools) {
+          registry.register(tool);
+        }
+      }
+      installedPlugins.set(plugin.name, plugin);
+      if (plugin.onInstall) {
+        await plugin.onInstall();
+      }
+    },
+
     async run(input: string, runOptions?: AgentRunOptions): Promise<AgentResponse> {
+      await ensurePluginsInitialized();
+
       const signal = runOptions?.signal;
 
       // Notify start hook
@@ -122,12 +189,21 @@ export function createAgentEngine(config: AgentConfig): Agent {
         ];
 
         const modelRequestOptions = signal ? { signal } : undefined;
+        const hasTools = registry.all().length > 0;
 
         for (let iteration = 0; iteration < maxIterations; iteration++) {
           // Check abort signal between iterations
           if (signal?.aborted) {
             throw new AbortError("Agent run was aborted");
           }
+
+          // --- Middleware: beforeGenerate ---
+          const beforeGenCtx = {
+            messages,
+            tools: registry.all(),
+            iteration,
+          };
+          await mwStack.executeBeforeGenerate(beforeGenCtx);
 
           // Generate model response
           let response: ModelResponse;
@@ -136,6 +212,16 @@ export function createAgentEngine(config: AgentConfig): Agent {
           } else {
             response = await model.generate(messages, undefined, modelRequestOptions);
           }
+
+          // --- Middleware: afterGenerate ---
+          const afterGenCtx = {
+            response,
+            messages,
+            iteration,
+          };
+          await mwStack.executeAfterGenerate(afterGenCtx);
+          // The middleware may have mutated afterGenCtx.response in-place
+          response = afterGenCtx.response;
 
           totalUsage = addUsage(totalUsage, response.usage);
 
@@ -182,6 +268,40 @@ export function createAgentEngine(config: AgentConfig): Agent {
                 });
                 continue;
               }
+            }
+
+            // --- Middleware: beforeToolCall ---
+            const beforeToolCtx = {
+              toolCall,
+              tool: registry.has(toolCall.name) ? registry.get(toolCall.name) : undefined,
+              skip: false,
+              result: undefined as string | undefined,
+            };
+            await mwStack.executeBeforeToolCall(beforeToolCtx);
+
+            // If middleware set skip=true, use the provided result
+            if (beforeToolCtx.skip) {
+              const skipResult = beforeToolCtx.result ?? "";
+              step.toolCalls.push({
+                call: toolCall,
+                result: skipResult,
+              });
+              messages.push({
+                role: "tool",
+                toolCallId: toolCall.id,
+                content: skipResult,
+              });
+
+              // --- Middleware: afterToolCall (skipped execution) ---
+              await mwStack.executeAfterToolCall({
+                toolCall,
+                result: skipResult,
+              });
+
+              if (hooks.onToolResult) {
+                await hooks.onToolResult(toolCall, skipResult);
+              }
+              continue;
             }
 
             // Execute the tool
@@ -245,6 +365,13 @@ export function createAgentEngine(config: AgentConfig): Agent {
               content: toolContent,
             });
 
+            // --- Middleware: afterToolCall ---
+            await mwStack.executeAfterToolCall({
+              toolCall,
+              result,
+              error,
+            });
+
             // Notify onToolResult hook
             if (hooks.onToolResult) {
               await hooks.onToolResult(toolCall, error ?? result);
@@ -304,6 +431,11 @@ export function createAgentEngine(config: AgentConfig): Agent {
         return agentResponse;
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
+
+        // --- Middleware: onError ---
+        const errorCtx = { error, handled: false };
+        await mwStack.executeOnError(errorCtx);
+
         if (hooks.onError) {
           await hooks.onError(error);
         }
