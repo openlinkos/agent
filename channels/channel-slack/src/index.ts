@@ -26,6 +26,6 @@ export interface SlackChannel {
  * @param config - Slack channel configuration
  * @returns A SlackChannel instance
  */
-export function createSlackChannel(config: SlackChannelConfig): SlackChannel {
+export function createSlackChannel(_config: SlackChannelConfig): SlackChannel {
   throw new Error("not yet implemented - coming in Phase 5");
 }

@@ -26,6 +26,6 @@ export interface FeishuChannel {
  * @param config - Feishu channel configuration
  * @returns A FeishuChannel instance
  */
-export function createFeishuChannel(config: FeishuChannelConfig): FeishuChannel {
+export function createFeishuChannel(_config: FeishuChannelConfig): FeishuChannel {
   throw new Error("not yet implemented - coming in Phase 5");
 }

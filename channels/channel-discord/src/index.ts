@@ -24,6 +24,6 @@ export interface DiscordChannel {
  * @param config - Discord channel configuration
  * @returns A DiscordChannel instance
  */
-export function createDiscordChannel(config: DiscordChannelConfig): DiscordChannel {
+export function createDiscordChannel(_config: DiscordChannelConfig): DiscordChannel {
   throw new Error("not yet implemented - coming in Phase 5");
 }

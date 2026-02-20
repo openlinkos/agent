@@ -7,47 +7,58 @@
  * @packageDocumentation
  */
 
-import type { Model, ModelResponse } from "@openlinkos/ai";
+// --- Core types ---
+export type {
+  JSONSchema,
+  ToolDefinition,
+  AgentStep,
+  AgentHooks,
+  AgentConfig,
+  AgentResponse,
+  Agent,
+} from "./types.js";
 
-export interface ToolDefinition {
-  /** Unique name for the tool. */
-  name: string;
-  /** Human-readable description of what the tool does. */
-  description: string;
-  /** JSON Schema describing the tool's input parameters. */
-  parameters: Record<string, unknown>;
-  /** The function to execute when the tool is called. */
-  execute: (params: Record<string, unknown>) => Promise<unknown>;
-}
+// Re-export AI types for convenience
+export type {
+  Model,
+  Message,
+  ModelResponse,
+  ToolCall,
+  Usage,
+} from "./types.js";
 
-export interface AgentConfig {
-  /** Unique name identifying the agent. */
-  name: string;
-  /** The model instance to use for generation. */
-  model: Model;
-  /** System prompt defining the agent's behavior. */
-  systemPrompt: string;
-  /** Tools available to the agent. */
-  tools?: ToolDefinition[];
-  /** Maximum number of reasoning loop iterations. Defaults to 10. */
-  maxIterations?: number;
-}
+// --- Tools ---
+export {
+  ToolRegistry,
+  validateParameters,
+  executeTool,
+} from "./tools.js";
+export type { ValidationResult } from "./tools.js";
 
-export interface AgentResponse {
-  /** The final text response from the agent. */
-  text: string;
-  /** The sequence of model responses during the reasoning loop. */
-  steps: ModelResponse[];
-  /** The agent's name. */
-  agentName: string;
-}
+// --- Guardrails ---
+export type {
+  GuardrailResult,
+  InputGuardrail,
+  OutputGuardrail,
+  ContentFilter,
+} from "./guardrails.js";
+export {
+  runInputGuardrails,
+  runOutputGuardrails,
+  applyContentFilters,
+  maxLengthGuardrail,
+  regexBlockFilter,
+} from "./guardrails.js";
 
-export interface Agent {
-  /** The agent's name. */
-  readonly name: string;
-  /** Run the agent with the given user input. */
-  run(input: string): Promise<AgentResponse>;
-}
+// --- Agent engine ---
+export { createAgentEngine } from "./agent.js";
+
+// ---------------------------------------------------------------------------
+// Main factory
+// ---------------------------------------------------------------------------
+
+import type { AgentConfig, Agent } from "./types.js";
+import { createAgentEngine } from "./agent.js";
 
 /**
  * Create a new agent instance.
@@ -57,27 +68,27 @@ export interface Agent {
  *
  * @example
  * ```typescript
- * import { createModel } from "@openlinkos/ai";
+ * import { createModel, registerProvider, createOpenAIProvider } from "@openlinkos/ai";
  * import { createAgent } from "@openlinkos/agent";
  *
+ * registerProvider(createOpenAIProvider());
  * const model = createModel("openai:gpt-4o");
  * const agent = createAgent({
  *   name: "assistant",
  *   model,
  *   systemPrompt: "You are a helpful assistant.",
+ *   tools: [{
+ *     name: "get_weather",
+ *     description: "Get the current weather",
+ *     parameters: { type: "object", properties: { city: { type: "string" } }, required: ["city"] },
+ *     execute: async (params) => ({ temp: 72, city: params.city }),
+ *   }],
  * });
  *
- * const response = await agent.run("What is TypeScript?");
+ * const response = await agent.run("What's the weather in Tokyo?");
  * console.log(response.text);
  * ```
  */
 export function createAgent(config: AgentConfig): Agent {
-  return {
-    name: config.name,
-    async run(_input: string): Promise<AgentResponse> {
-      throw new Error(
-        `Agent "${config.name}" execution is not yet implemented. This is a scaffold — the agent engine is coming in Phase 1.`
-      );
-    },
-  };
+  return createAgentEngine(config);
 }

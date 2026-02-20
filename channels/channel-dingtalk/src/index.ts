@@ -24,6 +24,6 @@ export interface DingTalkChannel {
  * @param config - DingTalk channel configuration
  * @returns A DingTalkChannel instance
  */
-export function createDingTalkChannel(config: DingTalkChannelConfig): DingTalkChannel {
+export function createDingTalkChannel(_config: DingTalkChannelConfig): DingTalkChannel {
   throw new Error("not yet implemented - coming in Phase 5");
 }

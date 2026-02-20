@@ -24,6 +24,6 @@ export interface TelegramChannel {
  * @param config - Telegram channel configuration
  * @returns A TelegramChannel instance
  */
-export function createTelegramChannel(config: TelegramChannelConfig): TelegramChannel {
+export function createTelegramChannel(_config: TelegramChannelConfig): TelegramChannel {
   throw new Error("not yet implemented - coming in Phase 4");
 }
