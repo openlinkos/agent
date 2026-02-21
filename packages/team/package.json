@@ -1,6 +1,6 @@
 {
   "name": "@openlinkos/team",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "OpenLinkOS Team — Multi-agent collaboration with supervisor, swarm, pipeline, and debate patterns",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -12,7 +12,9 @@
       "require": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts",
     "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
@@ -34,7 +36,16 @@
   "bugs": {
     "url": "https://github.com/openlinkos/agent/issues"
   },
-  "keywords": ["openlinkos", "team", "multi-agent", "collaboration", "supervisor", "swarm", "pipeline", "debate"],
+  "keywords": [
+    "openlinkos",
+    "team",
+    "multi-agent",
+    "collaboration",
+    "supervisor",
+    "swarm",
+    "pipeline",
+    "debate"
+  ],
   "engines": {
     "node": ">=18.0.0"
   },

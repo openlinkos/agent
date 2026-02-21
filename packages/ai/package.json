@@ -1,6 +1,6 @@
 {
   "name": "@openlinkos/ai",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "OpenLinkOS AI — Unified model invocation layer for LLM providers",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -12,7 +12,9 @@
       "require": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
@@ -30,7 +32,14 @@
   "bugs": {
     "url": "https://github.com/openlinkos/agent/issues"
   },
-  "keywords": ["openlinkos", "ai", "llm", "agent", "openai", "anthropic"],
+  "keywords": [
+    "openlinkos",
+    "ai",
+    "llm",
+    "agent",
+    "openai",
+    "anthropic"
+  ],
   "engines": {
     "node": ">=18.0.0"
   },

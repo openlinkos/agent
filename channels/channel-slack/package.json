@@ -1,6 +1,6 @@
 {
   "name": "@openlinkos/channel-slack",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "OpenLinkOS Channel — Slack app adapter for deploying agents to Slack",
   "license": "MIT",
   "homepage": "https://openlinkos.com",
@@ -12,7 +12,13 @@
   "bugs": {
     "url": "https://github.com/openlinkos/agent/issues"
   },
-  "keywords": ["openlinkos", "slack", "bot", "channel", "agent"],
+  "keywords": [
+    "openlinkos",
+    "slack",
+    "bot",
+    "channel",
+    "agent"
+  ],
   "engines": {
     "node": ">=18.0.0"
   },
@@ -29,7 +35,9 @@
       "require": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts",
     "dev": "tsup src/index.ts --format cjs,esm --dts --watch",

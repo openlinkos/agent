@@ -1,6 +1,6 @@
 {
   "name": "@openlinkos/channel-terminal",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "OpenLinkOS Channel — Terminal/stdin channel adapter with ANSI colored output",
   "license": "MIT",
   "homepage": "https://openlinkos.com",
@@ -12,7 +12,14 @@
   "bugs": {
     "url": "https://github.com/openlinkos/agent/issues"
   },
-  "keywords": ["openlinkos", "channel", "terminal", "stdin", "readline", "agent"],
+  "keywords": [
+    "openlinkos",
+    "channel",
+    "terminal",
+    "stdin",
+    "readline",
+    "agent"
+  ],
   "engines": {
     "node": ">=18.0.0"
   },
@@ -29,7 +36,9 @@
       "require": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",

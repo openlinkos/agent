@@ -1,6 +1,6 @@
 {
   "name": "@openlinkos/example-basic-chatbot",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "type": "module",
   "description": "Basic chatbot example using @openlinkos/ai and @openlinkos/agent",
