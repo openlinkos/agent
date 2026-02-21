@@ -1,6 +1,6 @@
 {
   "name": "@openlinkos/eval",
-  "version": "0.2.1",
+  "version": "0.1.0",
   "description": "OpenLinkOS Eval — Agent evaluation framework with scorers, reporters, and built-in test suites",
   "main": "dist/index.js",
   "module": "dist/index.mjs",

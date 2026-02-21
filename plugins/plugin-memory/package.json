@@ -1,6 +1,6 @@
 {
   "name": "@openlinkos/plugin-memory",
-  "version": "0.2.1",
+  "version": "0.1.0",
   "description": "OpenLinkOS Plugin — Persistent memory with conversation history, key-value storage, and semantic vector retrieval for agents",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
