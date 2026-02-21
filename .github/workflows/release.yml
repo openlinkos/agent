@@ -3,6 +3,19 @@ name: Release
 on:
   push:
     branches: [master]
+    # 只运行 CI 测试，不发布
+  
+  workflow_dispatch:
+    # 手动触发发布
+    inputs:
+      version_type:
+        type: choice
+        options:
+          - alpha
+          - beta
+          - release
+        default: alpha
+        description: '发布版本类型'
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
@@ -11,6 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write
       id-token: write
     steps:
       - uses: actions/checkout@v4
@@ -28,7 +42,17 @@ jobs:
       - name: Build
         run: pnpm build
 
-      - name: Publish to npm
-        run: pnpm release
+      - name: Create release PR or publish
+        if: github.event_name == 'workflow_dispatch'
+        uses: changesets/action@v1
+        with:
+          publish: pnpm release
+          version: pnpm version
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          VERSION_TYPE: ${{ github.event.inputs.version_type }}
+
+      - name: Run CI tests only
+        if: github.event_name == 'push'
+        run: pnpm test

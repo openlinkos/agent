@@ -1,6 +1,6 @@
 {
   "name": "@openlinkos/channel-terminal",
-  "version": "0.2.0",
+  "version": "0.1.0",
   "description": "OpenLinkOS Channel — Terminal/stdin channel adapter with ANSI colored output",
   "license": "MIT",
   "homepage": "https://openlinkos.com",

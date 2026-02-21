@@ -1,6 +1,6 @@
 {
   "name": "@openlinkos/channel-web",
-  "version": "0.2.0",
+  "version": "0.1.0",
   "description": "OpenLinkOS Channel — HTTP/WebSocket/SSE channel adapter for web-based agent communication",
   "license": "MIT",
   "homepage": "https://openlinkos.com",

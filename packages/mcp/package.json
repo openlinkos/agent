@@ -1,6 +1,6 @@
 {
   "name": "@openlinkos/mcp",
-  "version": "0.2.0",
+  "version": "0.1.0",
   "description": "OpenLinkOS MCP — Model Context Protocol client and server for tool connectivity",
   "main": "dist/index.js",
   "module": "dist/index.mjs",

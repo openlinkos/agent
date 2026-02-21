@@ -1,6 +1,6 @@
 {
   "name": "@openlinkos/team",
-  "version": "0.2.0",
+  "version": "0.1.0",
   "description": "OpenLinkOS Team — Multi-agent collaboration with supervisor, swarm, pipeline, and debate patterns",
   "main": "dist/index.js",
   "module": "dist/index.mjs",

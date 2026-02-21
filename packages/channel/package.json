@@ -1,6 +1,6 @@
 {
   "name": "@openlinkos/channel",
-  "version": "0.2.0",
+  "version": "0.1.0",
   "description": "OpenLinkOS Channel — Core channel interface, types, and base class for unified message I/O",
   "license": "MIT",
   "homepage": "https://openlinkos.com",

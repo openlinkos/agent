@@ -1,6 +1,6 @@
 {
   "name": "@openlinkos/channel-feishu",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "OpenLinkOS Channel — Feishu (Lark) bot adapter for deploying agents to Feishu",
   "license": "MIT",
   "homepage": "https://openlinkos.com",

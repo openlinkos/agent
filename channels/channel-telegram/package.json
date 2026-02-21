@@ -1,6 +1,6 @@
 {
   "name": "@openlinkos/channel-telegram",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "OpenLinkOS Channel — Telegram bot adapter for deploying agents to Telegram",
   "license": "MIT",
   "homepage": "https://openlinkos.com",

@@ -1,6 +1,6 @@
 {
   "name": "@openlinkos/channel-slack",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "OpenLinkOS Channel — Slack app adapter for deploying agents to Slack",
   "license": "MIT",
   "homepage": "https://openlinkos.com",

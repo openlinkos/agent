@@ -1,6 +1,6 @@
 {
   "name": "@openlinkos/channel-discord",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "OpenLinkOS Channel — Discord bot adapter for deploying agents to Discord",
   "license": "MIT",
   "homepage": "https://openlinkos.com",
