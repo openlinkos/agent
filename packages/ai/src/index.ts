@@ -111,6 +111,35 @@ export type {
   GenerateObjectResult,
 } from "./structured.js";
 
+// --- Provider adapters (for extending) ---
+export {
+  OpenAIAdapter,
+  toOpenAIMessages,
+  toOpenAITools,
+  parseToolCalls,
+  parseFunctionCall,
+  parseFinishReason,
+  parseUsage,
+  type OpenAIMessage,
+  type OpenAIToolCall,
+  type OpenAITool,
+  type OpenAIChatResponse,
+  type OpenAIStreamChunk,
+} from "./adapters/openai-adapter.js";
+export {
+  AnthropicAdapter,
+  toAnthropicMessages,
+  toAnthropicTools,
+  parseAnthropicToolCalls,
+  parseAnthropicText,
+  parseAnthropicFinishReason,
+  parseAnthropicUsage,
+  type AnthropicMessage,
+  type AnthropicContent,
+  type AnthropicTool,
+  type AnthropicResponse,
+} from "./adapters/anthropic-adapter.js";
+
 // --- Provider implementations ---
 export { OpenAIProvider, createOpenAIProvider } from "./providers/openai.js";
 export { AnthropicProvider, createAnthropicProvider } from "./providers/anthropic.js";

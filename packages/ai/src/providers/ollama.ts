@@ -1,15 +1,14 @@
 /**
  * Ollama provider — OpenAI-compatible API via local Ollama server.
  *
- * Reuses the OpenAI provider with a different base URL and no API key required.
+ * Reuses the OpenAI adapter with a different base URL and no API key required.
  * Supported models: llama3, mistral, codellama, and any model available in Ollama.
  */
 
 import type { ModelCapabilities } from "../types.js";
-import type { ProviderRequestOptions } from "../provider.js";
-import { OpenAIProvider } from "./openai.js";
+import { OpenAIAdapter } from "../adapters/openai-adapter.js";
 
-export class OllamaProvider extends OpenAIProvider {
+export class OllamaProvider extends OpenAIAdapter {
   override readonly name = "ollama";
 
   override readonly capabilities: ModelCapabilities = {
@@ -20,16 +19,25 @@ export class OllamaProvider extends OpenAIProvider {
     vision: false,
   };
 
-  protected override get providerLabel(): string {
+  protected getDefaultBaseURL(): string {
+    return "http://localhost:11434/v1";
+  }
+
+  protected getApiKeyEnvVar(): string {
+    return "OLLAMA_API_KEY";
+  }
+
+  protected get providerLabel(): string {
     return "Ollama";
   }
 
-  protected override getBaseURL(options: ProviderRequestOptions): string {
-    return options.baseURL ?? "http://localhost:11434/v1";
+  protected getEndpoint(): string {
+    return "/chat/completions";
   }
 
-  protected override getApiKey(options: ProviderRequestOptions): string {
-    return options.apiKey ?? process.env.OLLAMA_API_KEY ?? "";
+  // Ollama does not require an API key
+  protected override requiresApiKey(): boolean {
+    return false;
   }
 }
 

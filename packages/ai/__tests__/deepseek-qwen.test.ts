@@ -14,7 +14,7 @@ import { DeepSeekProvider } from "../src/providers/deepseek.js";
 import { QwenProvider } from "../src/providers/qwen.js";
 import { AuthenticationError } from "../src/errors.js";
 import { registerProvider, getProvider, clearProviders } from "../src/provider.js";
-import { OpenAIProvider } from "../src/providers/openai.js";
+import { OpenAIAdapter } from "../src/adapters/openai-adapter.js";
 import { createDeepSeekProvider } from "../src/providers/deepseek.js";
 import { createQwenProvider } from "../src/providers/qwen.js";
 
@@ -38,9 +38,9 @@ describe("DeepSeekProvider", () => {
     expect(provider.name).toBe("deepseek");
   });
 
-  it("extends OpenAIProvider", () => {
+  it("extends OpenAIAdapter", () => {
     const provider = new DeepSeekProvider();
-    expect(provider).toBeInstanceOf(OpenAIProvider);
+    expect(provider).toBeInstanceOf(OpenAIAdapter);
   });
 
   it("has correct capabilities", () => {
@@ -192,9 +192,9 @@ describe("QwenProvider", () => {
     expect(provider.name).toBe("qwen");
   });
 
-  it("extends OpenAIProvider", () => {
+  it("extends OpenAIAdapter", () => {
     const provider = new QwenProvider();
-    expect(provider).toBeInstanceOf(OpenAIProvider);
+    expect(provider).toBeInstanceOf(OpenAIAdapter);
   });
 
   it("has correct capabilities", () => {

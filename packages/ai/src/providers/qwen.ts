@@ -1,16 +1,16 @@
 /**
  * Qwen provider — OpenAI-compatible API via Alibaba DashScope.
  *
- * Reuses the OpenAI provider with a different base URL and API key.
+ * Reuses the OpenAI adapter with a different base URL and API key.
  * Supported models: qwen-turbo, qwen-plus, qwen-max.
  */
 
 import type { ModelCapabilities } from "../types.js";
 import type { ProviderRequestOptions } from "../provider.js";
+import { OpenAIAdapter } from "../adapters/openai-adapter.js";
 import { AuthenticationError } from "../errors.js";
-import { OpenAIProvider } from "./openai.js";
 
-export class QwenProvider extends OpenAIProvider {
+export class QwenProvider extends OpenAIAdapter {
   override readonly name = "qwen";
 
   override readonly capabilities: ModelCapabilities = {
@@ -21,15 +21,23 @@ export class QwenProvider extends OpenAIProvider {
     vision: false,
   };
 
-  protected override get providerLabel(): string {
+  protected getDefaultBaseURL(): string {
+    return "https://dashscope.aliyuncs.com/compatible-mode/v1";
+  }
+
+  protected getApiKeyEnvVar(): string {
+    return "DASHSCOPE_API_KEY";
+  }
+
+  protected get providerLabel(): string {
     return "Qwen";
   }
 
-  protected override getBaseURL(options: ProviderRequestOptions): string {
-    return options.baseURL ?? "https://dashscope.aliyuncs.com/compatible-mode/v1";
+  protected getEndpoint(): string {
+    return "/chat/completions";
   }
 
-  protected override getApiKey(options: ProviderRequestOptions): string {
+  protected getApiKey(options: ProviderRequestOptions): string {
     const key = options.apiKey ?? process.env.DASHSCOPE_API_KEY;
     if (!key) {
       throw new AuthenticationError(

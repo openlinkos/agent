@@ -1,16 +1,16 @@
 /**
  * DeepSeek provider — OpenAI-compatible API.
  *
- * Reuses the OpenAI provider with a different base URL and API key.
+ * Reuses the OpenAI adapter with a different base URL and API key.
  * Supported models: deepseek-chat, deepseek-reasoner.
  */
 
 import type { ModelCapabilities } from "../types.js";
 import type { ProviderRequestOptions } from "../provider.js";
+import { OpenAIAdapter } from "../adapters/openai-adapter.js";
 import { AuthenticationError } from "../errors.js";
-import { OpenAIProvider } from "./openai.js";
 
-export class DeepSeekProvider extends OpenAIProvider {
+export class DeepSeekProvider extends OpenAIAdapter {
   override readonly name = "deepseek";
 
   override readonly capabilities: ModelCapabilities = {
@@ -21,15 +21,23 @@ export class DeepSeekProvider extends OpenAIProvider {
     vision: false,
   };
 
-  protected override get providerLabel(): string {
+  protected getDefaultBaseURL(): string {
+    return "https://api.deepseek.com/v1";
+  }
+
+  protected getApiKeyEnvVar(): string {
+    return "DEEPSEEK_API_KEY";
+  }
+
+  protected get providerLabel(): string {
     return "DeepSeek";
   }
 
-  protected override getBaseURL(options: ProviderRequestOptions): string {
-    return options.baseURL ?? "https://api.deepseek.com/v1";
+  protected getEndpoint(): string {
+    return "/chat/completions";
   }
 
-  protected override getApiKey(options: ProviderRequestOptions): string {
+  protected getApiKey(options: ProviderRequestOptions): string {
     const key = options.apiKey ?? process.env.DEEPSEEK_API_KEY;
     if (!key) {
       throw new AuthenticationError(

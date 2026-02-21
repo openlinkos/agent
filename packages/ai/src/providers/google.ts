@@ -1,7 +1,8 @@
 /**
- * Google Gemini API provider implementation.
+ * Google Gemini Provider Adapter.
  *
- * Supports Gemini models via the Google AI Studio / Vertex AI compatible REST API.
+ * Provides a base implementation for providers that use the Google
+ * Gemini API format (Google Generative AI).
  */
 
 import type {
@@ -76,11 +77,6 @@ interface GeminiResponse {
   };
 }
 
-function isSafetyBlocked(ratings?: GeminiSafetyRating[]): boolean {
-  if (!ratings) return false;
-  return ratings.some((r) => r.blocked === true || r.probability === "HIGH");
-}
-
 // ---------------------------------------------------------------------------
 // Message conversion
 // ---------------------------------------------------------------------------
@@ -90,7 +86,6 @@ function toGeminiContents(
 ): { systemInstruction: string | undefined; contents: GeminiContent[] } {
   let systemInstruction: string | undefined;
   const contents: GeminiContent[] = [];
-  // Buffer for collecting tool results to merge into a single user turn
   let pendingToolResults: GeminiPart[] = [];
 
   function flushToolResults() {
@@ -136,7 +131,6 @@ function toGeminiContents(
 
       case "tool": {
         const toolMsg = msg as ToolMessage;
-        // Gemini expects function responses in user turn
         pendingToolResults.push({
           functionResponse: {
             name: toolMsg.toolCallId,
@@ -206,8 +200,13 @@ function parseGeminiUsage(usage?: GeminiResponse["usageMetadata"]): Usage {
   };
 }
 
+function isSafetyBlocked(ratings?: GeminiSafetyRating[]): boolean {
+  if (!ratings) return false;
+  return ratings.some((r) => r.blocked === true || r.probability === "HIGH");
+}
+
 // ---------------------------------------------------------------------------
-// Provider
+// Google Gemini Provider
 // ---------------------------------------------------------------------------
 
 export class GoogleProvider implements ModelProvider {
@@ -221,11 +220,11 @@ export class GoogleProvider implements ModelProvider {
     vision: true,
   };
 
-  private getBaseURL(options: ProviderRequestOptions): string {
+  protected getBaseURL(options: ProviderRequestOptions): string {
     return options.baseURL ?? "https://generativelanguage.googleapis.com/v1beta";
   }
 
-  private getApiKey(options: ProviderRequestOptions): string {
+  protected getApiKey(options: ProviderRequestOptions): string {
     const key = options.apiKey ?? process.env.GOOGLE_API_KEY;
     if (!key) {
       throw new AuthenticationError(
@@ -337,7 +336,6 @@ export class GoogleProvider implements ModelProvider {
     const data = (await response.json()) as GeminiResponse;
     const candidate = data.candidates?.[0];
 
-    // Google may return no candidates if safety ratings block the response
     if (!candidate || isSafetyBlocked(candidate.safetyRatings)) {
       return {
         text: null,
@@ -366,7 +364,6 @@ export class GoogleProvider implements ModelProvider {
 
     try {
       while (true) {
-        // Check abort signal
         if (signal?.aborted) {
           throw signal.reason ?? new Error("Aborted");
         }
@@ -403,7 +400,6 @@ export class GoogleProvider implements ModelProvider {
 
           const candidate = data.candidates?.[0];
 
-          // Handle safety ratings in streaming
           if (candidate && isSafetyBlocked(candidate.safetyRatings)) {
             yield { type: "done" };
             return;

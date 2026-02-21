@@ -11,7 +11,7 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { OllamaProvider } from "../src/providers/ollama.js";
 import { registerProvider, getProvider, clearProviders } from "../src/provider.js";
-import { OpenAIProvider } from "../src/providers/openai.js";
+import { OpenAIAdapter } from "../src/adapters/openai-adapter.js";
 import { createOllamaProvider } from "../src/providers/ollama.js";
 
 describe("OllamaProvider", () => {
@@ -30,9 +30,9 @@ describe("OllamaProvider", () => {
     expect(provider.name).toBe("ollama");
   });
 
-  it("extends OpenAIProvider", () => {
+  it("extends OpenAIAdapter", () => {
     const provider = new OllamaProvider();
-    expect(provider).toBeInstanceOf(OpenAIProvider);
+    expect(provider).toBeInstanceOf(OpenAIAdapter);
   });
 
   it("has correct capabilities", () => {
