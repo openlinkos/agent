@@ -1,0 +1,167 @@
+name: AI Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    branches: [master]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  ai-review:
+    name: AI PR Review
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch PR diff
+        id: diff
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          gh pr diff "$PR_NUMBER" > /tmp/pr.diff || echo "(empty diff)" > /tmp/pr.diff
+          echo "diff_lines=$(wc -l < /tmp/pr.diff)" >> "$GITHUB_OUTPUT"
+
+      - name: Analyze diff and generate review
+        id: review
+        run: |
+          DIFF=/tmp/pr.diff
+
+          # --- helpers ---
+          has_pattern() { grep -qE "$1" "$DIFF" 2>/dev/null; }
+          added_lines() { grep -E "^\+" "$DIFF" | grep -v "^+++" || true; }
+
+          # Collect changed file extensions
+          CHANGED_FILES=$(grep -E "^diff --git" "$DIFF" | sed 's|diff --git a/||;s| b/.*||' || true)
+          TS_FILES=$(echo "$CHANGED_FILES" | grep -cE '\.(ts|tsx)$' || true)
+          TEST_FILES=$(echo "$CHANGED_FILES" | grep -cE '\.(test|spec)\.(ts|tsx|js)$' || true)
+          TOTAL_FILES=$(echo "$CHANGED_FILES" | grep -c . || true)
+          ADDED_LINES=$(added_lines | wc -l)
+
+          # ── 1. Type Safety ────────────────────────────────────────
+          TYPE_SAFE="✅"
+          TYPE_ISSUES=""
+          if has_pattern "^\+.*\bany\b"; then
+            TYPE_SAFE="⚠️"
+            ANY_COUNT=$(added_lines | grep -cE '\bany\b' || true)
+            TYPE_ISSUES="$ANY_COUNT use(s) of \`any\` detected"
+          fi
+          if has_pattern "^\+.*as unknown"; then
+            TYPE_SAFE="⚠️"
+            TYPE_ISSUES="${TYPE_ISSUES:+$TYPE_ISSUES; }unsafe \`as unknown\` cast detected"
+          fi
+          if has_pattern "^\+.*@ts-ignore|@ts-nocheck"; then
+            TYPE_SAFE="⚠️"
+            TYPE_ISSUES="${TYPE_ISSUES:+$TYPE_ISSUES; }\`@ts-ignore\`/\`@ts-nocheck\` directive found"
+          fi
+
+          # ── 2. Error Handling ─────────────────────────────────────
+          ERR_HANDLING="✅"
+          ERR_ISSUES=""
+          CATCH_COUNT=$(added_lines | grep -cE '\bcatch\b' || true)
+          PROMISE_COUNT=$(added_lines | grep -cE '\.(then|catch)\(|async\s+function|await\s+' || true)
+          EMPTY_CATCH=$(grep -cE 'catch\s*\([^)]*\)\s*\{\s*\}' "$DIFF" || true)
+          if [ "$EMPTY_CATCH" -gt 0 ]; then
+            ERR_HANDLING="⚠️"
+            ERR_ISSUES="$EMPTY_CATCH empty catch block(s) found"
+          fi
+          if [ "$PROMISE_COUNT" -gt 2 ] && [ "$CATCH_COUNT" -eq 0 ]; then
+            ERR_HANDLING="⚠️"
+            ERR_ISSUES="${ERR_ISSUES:+$ERR_ISSUES; }async code added without visible error handling"
+          fi
+
+          # ── 3. Test Coverage ──────────────────────────────────────
+          TEST_COVERAGE="✅"
+          TEST_ISSUES=""
+          if [ "$TOTAL_FILES" -gt 0 ] && [ "$TEST_FILES" -eq 0 ] && [ "$ADDED_LINES" -gt 20 ]; then
+            TEST_COVERAGE="⚠️"
+            TEST_ISSUES="No test files changed; consider adding/updating tests"
+          elif [ "$TEST_FILES" -gt 0 ]; then
+            TEST_ISSUES="$TEST_FILES test file(s) updated"
+          fi
+
+          # ── 4. API Consistency ────────────────────────────────────
+          API_CONSISTENCY="✅"
+          API_ISSUES=""
+          if has_pattern "^\+.*(export\s+(function|class|const|type|interface))"; then
+            EXPORT_COUNT=$(added_lines | grep -cE 'export\s+(function|class|const|type|interface)' || true)
+            API_ISSUES="$EXPORT_COUNT new export(s) added"
+          fi
+          if has_pattern "^\-.*(export\s+(function|class|const|type|interface))"; then
+            REM_COUNT=$(grep -E "^-" "$DIFF" | grep -v "^---" | grep -cE 'export\s+(function|class|const|type|interface)' || true)
+            if [ "$REM_COUNT" -gt 0 ]; then
+              API_CONSISTENCY="⚠️"
+              API_ISSUES="${API_ISSUES:+$API_ISSUES; }$REM_COUNT export(s) removed — potential breaking change"
+            fi
+          fi
+
+          # ── 5. Breaking Changes ───────────────────────────────────
+          BREAKING="✅"
+          BREAKING_ISSUES=""
+          if has_pattern "^\-.*(export\s+(function|class|const|type|interface))"; then
+            BREAKING="⚠️"
+            BREAKING_ISSUES="Public exports removed; check downstream consumers"
+          fi
+          if has_pattern "BREAKING CHANGE|breaking change" ; then
+            BREAKING="⚠️"
+            BREAKING_ISSUES="${BREAKING_ISSUES:+$BREAKING_ISSUES; }BREAKING CHANGE noted in diff"
+          fi
+          if has_pattern "^\+.*\"version\":" && ! has_pattern "\"devDependencies\"\|\"dependencies\""; then
+            BREAKING_ISSUES="${BREAKING_ISSUES:+$BREAKING_ISSUES; }version bump detected"
+          fi
+
+          # ── Summary stats ─────────────────────────────────────────
+          WARN_COUNT=0
+          for s in "$TYPE_SAFE" "$ERR_HANDLING" "$TEST_COVERAGE" "$API_CONSISTENCY" "$BREAKING"; do
+            [ "$s" = "⚠️" ] && WARN_COUNT=$((WARN_COUNT+1))
+          done
+
+          if [ "$WARN_COUNT" -eq 0 ]; then
+            SUMMARY="All checks passed — looks good! 🎉"
+          else
+            SUMMARY="$WARN_COUNT check(s) need attention."
+          fi
+
+          # ── Build comment ─────────────────────────────────────────
+          cat > /tmp/review_comment.md <<EOF
+          ## 🤖 AI Code Review
+
+          > Automated review for PR #${{ github.event.pull_request.number }} — **informational only, does not block merge.**
+
+          ### Checklist
+
+          | | Item | Notes |
+          |---|---|---|
+          | $TYPE_SAFE | **Type Safety** | ${TYPE_ISSUES:-No issues detected} |
+          | $ERR_HANDLING | **Error Handling** | ${ERR_ISSUES:-No issues detected} |
+          | $TEST_COVERAGE | **Test Coverage** | ${TEST_ISSUES:-No issues detected} |
+          | $API_CONSISTENCY | **API Consistency** | ${API_ISSUES:-No public API changes} |
+          | $BREAKING | **Breaking Changes** | ${BREAKING_ISSUES:-No breaking changes detected} |
+
+          ### Stats
+
+          - 📁 Files changed: **$TOTAL_FILES** ($TS_FILES TypeScript)
+          - ➕ Lines added: **$ADDED_LINES**
+          - 🧪 Test files updated: **$TEST_FILES**
+
+          ---
+          $SUMMARY
+
+          <sub>Powered by [openlinkos/agent](https://github.com/openlinkos/agent) · AI PR Review workflow</sub>
+          EOF
+
+          echo "warn_count=$WARN_COUNT" >> "$GITHUB_OUTPUT"
+
+      - name: Post review comment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          gh pr review "$PR_NUMBER" \
+            --comment \
+            --body "$(cat /tmp/review_comment.md)"
