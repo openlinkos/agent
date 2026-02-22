@@ -6,8 +6,76 @@ on:
   pull_request:
     branches: [master]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  test:
+  # ── Scope detection ──────────────────────────────────────────────────────────
+  scope:
+    name: Detect changed scope
+    runs-on: ubuntu-latest
+    outputs:
+      docs_only: ${{ steps.check.outputs.docs_only }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if only docs/markdown changed
+        id: check
+        run: |
+          # On push to master compare with the previous commit;
+          # on PRs compare with the base branch.
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE=${{ github.event.pull_request.base.sha }}
+          else
+            BASE=${{ github.event.before }}
+          fi
+
+          # Fall back to HEAD~1 when BASE is the zero sha (first push, etc.)
+          if [ "$BASE" = "0000000000000000000000000000000000000000" ] || [ -z "$BASE" ]; then
+            BASE="HEAD~1"
+          fi
+
+          CHANGED=$(git diff --name-only "$BASE" HEAD 2>/dev/null || git diff --name-only HEAD~1 HEAD)
+          echo "Changed files:"
+          echo "$CHANGED"
+
+          NON_DOCS=$(echo "$CHANGED" | grep -Ev '^\.(gitignore|editorconfig)$|^(docs?/|.*\.md$|.*\.mdx$|.*\.txt$|LICENSE)' || true)
+          if [ -z "$NON_DOCS" ]; then
+            echo "docs_only=true" >> "$GITHUB_OUTPUT"
+            echo "→ Docs-only change detected; heavy jobs will be skipped."
+          else
+            echo "docs_only=false" >> "$GITHUB_OUTPUT"
+            echo "→ Source files changed; full pipeline will run."
+          fi
+
+  # ── Type-check ───────────────────────────────────────────────────────────────
+  typecheck:
+    name: Type check
+    needs: scope
+    if: needs.scope.outputs.docs_only != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        run: pnpm typecheck
+
+  # ── Build ─────────────────────────────────────────────────────────────────────
+  build:
+    name: Build
+    needs: typecheck
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,8 +92,67 @@ jobs:
       - name: Build
         run: pnpm build
 
-      - name: Type check
-        run: pnpm typecheck
+      # Cache build artifacts for the test job
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-dist
+          path: |
+            packages/*/dist
+          retention-days: 1
 
-      - name: Test (unit + integration)
+  # ── Test ──────────────────────────────────────────────────────────────────────
+  test:
+    name: Test (unit + integration)
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-dist
+          path: packages
+
+      - name: Test
         run: pnpm test
+
+  # ── Release check ─────────────────────────────────────────────────────────────
+  release-check:
+    name: Release check
+    needs: scope
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for version bump or changeset
+        run: |
+          echo "Checking for release readiness..."
+
+          # Check if any package.json version was bumped
+          CHANGED_PKG=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep 'packages/.*/package\.json' || true)
+
+          # Check if a changeset was added
+          CHANGESETS=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep '\.changeset/' || true)
+
+          if [ -n "$CHANGESETS" ]; then
+            echo "✅ Changeset found: $CHANGESETS"
+          elif [ -n "$CHANGED_PKG" ]; then
+            echo "✅ package.json version bump detected: $CHANGED_PKG"
+          else
+            echo "ℹ️  No version bump or changeset detected — skipping release gating (placeholder check)."
+          fi
+          echo "Release check passed."
