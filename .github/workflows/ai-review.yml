@@ -1,5 +1,11 @@
 name: AI Code Review
 
+# NOTE: This workflow performs STATIC RULE-BASED checks (pattern matching on diff),
+# NOT true AI semantic analysis. It detects common issues such as `any` usage,
+# empty catch blocks, missing test files, and exported symbol changes.
+# For AI-powered semantic review, the dev-mgr agent performs manual review
+# during patrol cycles using `gh pr diff` + LLM analysis.
+
 on:
   pull_request:
     types: [opened, synchronize]
