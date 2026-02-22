@@ -53,6 +53,4 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           VERSION_TYPE: ${{ github.event.inputs.version_type }}
 
-      - name: Run CI tests only
-        if: github.event_name == 'push'
-        run: pnpm test
+      # Tests are run by the CI workflow; no duplication needed here.
