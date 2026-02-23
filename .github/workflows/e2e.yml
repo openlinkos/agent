@@ -34,7 +34,7 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
           ANTHROPIC_MODEL: ${{ secrets.ANTHROPIC_MODEL }}
-        run: pnpm test -- --reporter=json --outputFile=e2e-results.json
+        run: pnpm test -- --testPathPattern e2e --reporter=default --reporter=json --outputFile=e2e-results.json
 
       - name: Upload E2E results
         if: always()
