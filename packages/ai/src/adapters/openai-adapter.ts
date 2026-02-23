@@ -26,6 +26,54 @@ import {
 } from "../errors.js";
 
 // ---------------------------------------------------------------------------
+// Think-tag stripping
+// ---------------------------------------------------------------------------
+
+/**
+ * Result of stripping `<think>` tags from model output.
+ */
+export interface StripThinkTagsResult {
+  /** The text with all `<think>...</think>` blocks removed. */
+  text: string;
+  /** Concatenated reasoning content extracted from the blocks (null if none found). */
+  reasoning: string | null;
+}
+
+/**
+ * Strip `<think>...</think>` reasoning blocks from model output.
+ *
+ * Handles:
+ * - Multiple `<think>` blocks
+ * - Unclosed `<think>` tags (treats everything after the tag as reasoning)
+ * - Case-insensitive matching
+ * - Whitespace normalisation of the remaining text
+ */
+export function stripThinkTags(input: string): StripThinkTagsResult {
+  const reasoningParts: string[] = [];
+
+  // Match closed <think>...</think> blocks (case-insensitive, dotAll for newlines)
+  const closedPattern = /<think>([\s\S]*?)<\/think>/gi;
+  let stripped = input.replace(closedPattern, (_match, content: string) => {
+    const trimmed = content.trim();
+    if (trimmed) reasoningParts.push(trimmed);
+    return "";
+  });
+
+  // Match unclosed <think> tag (no closing tag) — treat rest of string as reasoning
+  const unclosedPattern = /<think>([\s\S]*)$/i;
+  stripped = stripped.replace(unclosedPattern, (_match, content: string) => {
+    const trimmed = content.trim();
+    if (trimmed) reasoningParts.push(trimmed);
+    return "";
+  });
+
+  return {
+    text: stripped.trim(),
+    reasoning: reasoningParts.length > 0 ? reasoningParts.join("\n\n") : null,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // OpenAI API types (minimal subset)
 // ---------------------------------------------------------------------------
 
@@ -415,16 +463,28 @@ export abstract class OpenAIAdapter implements ModelProvider {
       ? parseToolCalls(choice.message.tool_calls)
       : parseFunctionCall(choice.message.function_call);
 
+    // Strip <think> reasoning tags from response text
+    const rawText = choice.message.content;
+    let text: string | null = rawText;
+    let reasoning: string | null = null;
+    if (rawText) {
+      const result = stripThinkTags(rawText);
+      text = result.text || null;
+      reasoning = result.reasoning;
+    }
+
     return {
-      text: choice.message.content,
+      text,
       toolCalls,
       usage: parseUsage(data.usage),
       finishReason: parseFinishReason(choice.finish_reason),
+      ...(reasoning != null ? { reasoning } : {}),
     };
   }
 
   /**
-   * Parse SSE stream from the API.
+   * Parse SSE stream from the API, stripping `<think>` tags and emitting
+   * their contents as `reasoning_delta` events.
    */
   protected async *parseSSEStream(
     reader: ReadableStreamDefaultReader<Uint8Array>,
@@ -434,6 +494,76 @@ export abstract class OpenAIAdapter implements ModelProvider {
     let buffer = "";
     const streamTimeoutMs = 30_000;
     let lastDataTime = Date.now();
+
+    // Think-tag streaming state
+    let insideThink = false;
+    // Pending text that might contain a partial "<think" or "</think" tag
+    let pendingText = "";
+
+    /**
+     * Process accumulated text, splitting it into text_delta and
+     * reasoning_delta events based on <think>...</think> boundaries.
+     */
+    function* flushText(text: string): Generator<StreamEvent> {
+      pendingText += text;
+
+      while (pendingText.length > 0) {
+        if (insideThink) {
+          // Look for closing </think> tag
+          const closeIdx = pendingText.toLowerCase().indexOf("</think>");
+          if (closeIdx !== -1) {
+            // Emit everything before the close tag as reasoning
+            const reasoning = pendingText.slice(0, closeIdx);
+            if (reasoning) {
+              yield { type: "reasoning_delta", text: reasoning };
+            }
+            pendingText = pendingText.slice(closeIdx + "</think>".length);
+            insideThink = false;
+          } else {
+            // Might have a partial "</think" at the end — keep it pending
+            const partialClose = findPartialTag(pendingText, "</think>");
+            if (partialClose > 0) {
+              const safe = pendingText.slice(0, pendingText.length - partialClose);
+              if (safe) {
+                yield { type: "reasoning_delta", text: safe };
+              }
+              pendingText = pendingText.slice(pendingText.length - partialClose);
+            } else {
+              // All content is reasoning
+              yield { type: "reasoning_delta", text: pendingText };
+              pendingText = "";
+            }
+            break;
+          }
+        } else {
+          // Look for opening <think> tag
+          const openIdx = pendingText.toLowerCase().indexOf("<think>");
+          if (openIdx !== -1) {
+            // Emit everything before the open tag as text
+            const before = pendingText.slice(0, openIdx);
+            if (before) {
+              yield { type: "text_delta", text: before };
+            }
+            pendingText = pendingText.slice(openIdx + "<think>".length);
+            insideThink = true;
+          } else {
+            // Might have a partial "<think" at the end — keep it pending
+            const partialOpen = findPartialTag(pendingText, "<think>");
+            if (partialOpen > 0) {
+              const safe = pendingText.slice(0, pendingText.length - partialOpen);
+              if (safe) {
+                yield { type: "text_delta", text: safe };
+              }
+              pendingText = pendingText.slice(pendingText.length - partialOpen);
+            } else {
+              yield { type: "text_delta", text: pendingText };
+              pendingText = "";
+            }
+            break;
+          }
+        }
+      }
+    }
 
     try {
       while (true) {
@@ -477,7 +607,7 @@ export abstract class OpenAIAdapter implements ModelProvider {
 
           const delta = chunk.choices?.[0]?.delta;
           if (delta?.content) {
-            yield { type: "text_delta", text: delta.content };
+            yield* flushText(delta.content);
           }
 
           if (delta?.tool_calls) {
@@ -501,6 +631,12 @@ export abstract class OpenAIAdapter implements ModelProvider {
           // Handle content_filter finish reason in stream
           const finishReason = chunk.choices?.[0]?.finish_reason;
           if (finishReason === "content_filter") {
+            // Flush any remaining pending text
+            if (pendingText) {
+              const eventType = insideThink ? "reasoning_delta" : "text_delta";
+              yield { type: eventType, text: pendingText } as StreamEvent;
+              pendingText = "";
+            }
             yield { type: "done" };
             return;
           }
@@ -510,6 +646,27 @@ export abstract class OpenAIAdapter implements ModelProvider {
       reader.releaseLock();
     }
 
+    // Flush any remaining pending text at end of stream
+    if (pendingText) {
+      const eventType = insideThink ? "reasoning_delta" : "text_delta";
+      yield { type: eventType, text: pendingText } as StreamEvent;
+    }
+
     yield { type: "done" };
   }
+}
+
+/**
+ * Check if the end of `text` contains a partial (prefix) match
+ * for `tag`. Returns the length of the partial match, or 0.
+ */
+function findPartialTag(text: string, tag: string): number {
+  const lower = text.toLowerCase();
+  // Check decreasing suffix lengths of the tag
+  for (let len = tag.length - 1; len >= 1; len--) {
+    if (lower.endsWith(tag.slice(0, len).toLowerCase())) {
+      return len;
+    }
+  }
+  return 0;
 }

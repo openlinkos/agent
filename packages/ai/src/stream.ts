@@ -16,6 +16,12 @@ export interface TextDelta {
   text: string;
 }
 
+/** A chunk of reasoning content extracted from <think> tags. */
+export interface ReasoningDelta {
+  type: "reasoning_delta";
+  text: string;
+}
+
 /** A tool call chunk (may arrive incrementally). */
 export interface ToolCallDelta {
   type: "tool_call_delta";
@@ -33,7 +39,7 @@ export interface StreamDone {
   type: "done";
 }
 
-export type StreamEvent = TextDelta | ToolCallDelta | UsageDelta | StreamDone;
+export type StreamEvent = TextDelta | ReasoningDelta | ToolCallDelta | UsageDelta | StreamDone;
 
 // ---------------------------------------------------------------------------
 // StreamResult
