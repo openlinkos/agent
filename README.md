@@ -18,12 +18,25 @@ pnpm add @openlinkos/ai @openlinkos/agent
 ```
 
 ```typescript
-import { createModel } from "@openlinkos/ai";
+import {
+  createModel,
+  registerProvider,
+  createOpenAIProvider,
+} from "@openlinkos/ai";
 import { createAgent } from "@openlinkos/agent";
 
+// 1. Register one or more providers
+registerProvider(createOpenAIProvider());
+
+// 2. Create a model (provider:model format)
+const model = createModel("openai:gpt-4o", {
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+// 3. Create an agent and run it
 const agent = createAgent({
   name: "assistant",
-  model: createModel("openai:gpt-4o"),
+  model,
   systemPrompt: "You are a helpful assistant.",
 });
 
@@ -33,16 +46,86 @@ console.log(text);
 
 ## Providers
 
-| Provider | Model ID prefix |
-|----------|-----------------|
-| OpenAI | `openai:gpt-4o`, `openai:gpt-4o-mini` |
-| Anthropic | `anthropic:claude-sonnet-4-20250514` |
-| Google Gemini | `google:gemini-2.0-flash` |
-| DeepSeek | `deepseek:deepseek-chat` |
-| Qwen | `qwen:qwen-turbo` |
-| Ollama | `ollama:llama3` |
+### Built-in providers
+
+| Provider | Model ID prefix | Adapter |
+|----------|-----------------|---------|
+| OpenAI | `openai:gpt-4o`, `openai:gpt-4o-mini` | OpenAI |
+| Anthropic | `anthropic:claude-sonnet-4-20250514` | Anthropic |
+| Google Gemini | `google:gemini-2.0-flash` | Native |
+| DeepSeek | `deepseek:deepseek-chat` | OpenAI |
+| Qwen | `qwen:qwen-turbo` | OpenAI |
+| Ollama | `ollama:llama3` | OpenAI |
 
 All providers share a unified interface — swap models by changing a single string.
+
+### Provider architecture
+
+Providers are built on two adapter base classes:
+
+- **`OpenAIAdapter`** — For any API that follows the OpenAI Chat Completions format. Used by OpenAI, DeepSeek, Qwen, and Ollama out of the box.
+- **`AnthropicAdapter`** — For any API that follows the Anthropic Messages format. Used by Anthropic out of the box.
+
+This means **any OpenAI-compatible or Anthropic-compatible endpoint** works with the framework — just point `baseURL` at your service.
+
+### Model configuration
+
+`createModel()` accepts a second config parameter:
+
+```typescript
+const model = createModel("openai:gpt-4o", {
+  apiKey: process.env.OPENAI_API_KEY,  // API key (defaults to provider env var)
+  baseURL: "https://your-api.com/v1",  // Custom endpoint URL
+  temperature: 0.7,                     // Sampling temperature (0–2)
+  maxTokens: 4096,                      // Maximum tokens to generate
+  topP: 0.9,                            // Top-p sampling
+  stop: ["\n"],                         // Stop sequences
+});
+```
+
+Config can also be overridden per call:
+
+```typescript
+await model.generate(messages, { temperature: 0 });
+```
+
+Each provider reads its API key from an environment variable by default:
+
+| Provider | Env var |
+|----------|---------|
+| OpenAI | `OPENAI_API_KEY` |
+| Anthropic | `ANTHROPIC_API_KEY` |
+| Google | `GOOGLE_API_KEY` |
+| DeepSeek | `DEEPSEEK_API_KEY` |
+| Qwen | `DASHSCOPE_API_KEY` |
+| Ollama | _(none required)_ |
+
+### Custom / compatible endpoints
+
+Any OpenAI-compatible or Anthropic-compatible service can be used by setting `baseURL`:
+
+```typescript
+import {
+  registerProvider,
+  createOpenAIProvider,
+  createAnthropicProvider,
+  createModel,
+} from "@openlinkos/ai";
+
+// OpenAI-compatible endpoint (Azure, LiteLLM, vLLM, etc.)
+registerProvider(createOpenAIProvider());
+const model = createModel("openai:my-model", {
+  baseURL: "https://my-openai-compatible-api.com/v1",
+  apiKey: "...",
+});
+
+// Anthropic-compatible endpoint
+registerProvider(createAnthropicProvider());
+const model2 = createModel("anthropic:claude-sonnet-4-20250514", {
+  baseURL: "https://my-anthropic-compatible-api.com",
+  apiKey: "...",
+});
+```
 
 ## Packages
 
@@ -91,13 +174,14 @@ Channel adapters: [Telegram](./channels/channel-telegram) · [Discord](./channel
 | | OpenLinkOS Agent | Vercel AI SDK | LangChain | Claude Agent SDK |
 |---|---|---|---|---|
 | Multi-agent teams | Supervisor, debate, sequential, parallel | No | Limited (LangGraph) | No |
+| Agent loop | ReAct (built-in) | Yes (agent loop) | Yes (LangGraph) | Yes (Claude-native) |
 | Agent-as-tool composition | Yes | No | Partial | No |
-| Built-in MCP support | Client + bridge | No | Community | Native |
+| Built-in MCP support | Client + bridge | Yes | Community | Native |
 | Structured output | Schema-validated | Yes | Yes | Yes |
 | Channel adapters | Telegram, Discord, Slack, Feishu, DingTalk | No | No | No |
 | Eval framework | Built-in scorers + reporters | No | LangSmith (separate) | No |
-| Memory plugin | Conversation + KV + vector | No | Yes | No |
-| Provider support | OpenAI, Anthropic, Google, DeepSeek, Qwen, Ollama | OpenAI, Anthropic, Google, more | Broad | Anthropic only |
+| Memory | Conversation + KV + vector | No | Yes | No |
+| Provider support | OpenAI, Anthropic, Google, DeepSeek, Qwen, Ollama + any compatible endpoint | OpenAI, Anthropic, Google, more | Broad | Anthropic only |
 | Streaming | Yes | Yes | Yes | Yes |
 | TypeScript-first | Yes | Yes | Python-first | Python-first |
 | License | MIT | Apache 2.0 | MIT | MIT |
