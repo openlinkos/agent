@@ -145,6 +145,8 @@ export interface ModelResponse {
   usage: Usage;
   /** The finish reason reported by the provider. */
   finishReason: FinishReason;
+  /** Extracted reasoning content from <think> tags (if present). */
+  reasoning?: string | null;
 }
 
 export type FinishReason = "stop" | "length" | "tool_calls" | "content_filter" | "error" | "unknown";

@@ -44,6 +44,7 @@ export {
 // --- Streaming ---
 export type {
   TextDelta,
+  ReasoningDelta,
   ToolCallDelta,
   UsageDelta,
   StreamDone,
@@ -120,6 +121,8 @@ export {
   parseFunctionCall,
   parseFinishReason,
   parseUsage,
+  stripThinkTags,
+  type StripThinkTagsResult,
   type OpenAIMessage,
   type OpenAIToolCall,
   type OpenAITool,
