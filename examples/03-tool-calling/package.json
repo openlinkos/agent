@@ -1,0 +1,15 @@
+{
+  "name": "@openlinkos/example-03-tool-calling",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Tool Calling: Agent with calculator and weather tools",
+  "scripts": {
+    "start": "npx tsx index.ts"
+  },
+  "dependencies": {
+    "@openlinkos/ai": "workspace:*",
+    "@openlinkos/agent": "workspace:*",
+    "dotenv": "^16.0.0"
+  }
+}

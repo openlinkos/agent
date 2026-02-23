@@ -1,0 +1,14 @@
+{
+  "name": "@openlinkos/example-02-streaming-chat",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Streaming Chat: interactive CLI chat with streaming responses",
+  "scripts": {
+    "start": "npx tsx index.ts"
+  },
+  "dependencies": {
+    "@openlinkos/ai": "workspace:*",
+    "dotenv": "^16.0.0"
+  }
+}

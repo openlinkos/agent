@@ -1,0 +1,14 @@
+{
+  "name": "@openlinkos/example-04-structured-output",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Structured Output: JSON schema validated output with generateObject",
+  "scripts": {
+    "start": "npx tsx index.ts"
+  },
+  "dependencies": {
+    "@openlinkos/ai": "workspace:*",
+    "dotenv": "^16.0.0"
+  }
+}

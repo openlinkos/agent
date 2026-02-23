@@ -1,0 +1,16 @@
+{
+  "name": "@openlinkos/example-05-multi-agent-debate",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Multi-Agent Debate: two agents argue opposing positions with a judge",
+  "scripts": {
+    "start": "npx tsx index.ts"
+  },
+  "dependencies": {
+    "@openlinkos/ai": "workspace:*",
+    "@openlinkos/agent": "workspace:*",
+    "@openlinkos/team": "workspace:*",
+    "dotenv": "^16.0.0"
+  }
+}

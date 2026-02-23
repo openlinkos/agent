@@ -1,0 +1,14 @@
+{
+  "name": "@openlinkos/example-01-hello-world",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Hello World: generateText with a real OpenAI-compatible API",
+  "scripts": {
+    "start": "npx tsx index.ts"
+  },
+  "dependencies": {
+    "@openlinkos/ai": "workspace:*",
+    "dotenv": "^16.0.0"
+  }
+}

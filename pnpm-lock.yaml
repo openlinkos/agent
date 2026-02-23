@@ -75,6 +75,99 @@ importers:
         specifier: workspace:*
         version: link:../../packages/ai
 
+  examples/01-hello-world:
+    dependencies:
+      '@openlinkos/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
+      dotenv:
+        specifier: ^16.0.0
+        version: 16.6.1
+
+  examples/02-streaming-chat:
+    dependencies:
+      '@openlinkos/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
+      dotenv:
+        specifier: ^16.0.0
+        version: 16.6.1
+
+  examples/03-tool-calling:
+    dependencies:
+      '@openlinkos/agent':
+        specifier: workspace:*
+        version: link:../../packages/agent
+      '@openlinkos/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
+      dotenv:
+        specifier: ^16.0.0
+        version: 16.6.1
+
+  examples/04-structured-output:
+    dependencies:
+      '@openlinkos/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
+      dotenv:
+        specifier: ^16.0.0
+        version: 16.6.1
+
+  examples/05-multi-agent-debate:
+    dependencies:
+      '@openlinkos/agent':
+        specifier: workspace:*
+        version: link:../../packages/agent
+      '@openlinkos/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
+      '@openlinkos/team':
+        specifier: workspace:*
+        version: link:../../packages/team
+      dotenv:
+        specifier: ^16.0.0
+        version: 16.6.1
+
+  examples/06-mcp-tools:
+    dependencies:
+      '@openlinkos/agent':
+        specifier: workspace:*
+        version: link:../../packages/agent
+      '@openlinkos/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
+      '@openlinkos/mcp':
+        specifier: workspace:*
+        version: link:../../packages/mcp
+      dotenv:
+        specifier: ^16.0.0
+        version: 16.6.1
+
+  examples/07-memory-conversation:
+    dependencies:
+      '@openlinkos/agent':
+        specifier: workspace:*
+        version: link:../../packages/agent
+      '@openlinkos/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
+      dotenv:
+        specifier: ^16.0.0
+        version: 16.6.1
+
+  examples/08-workflow-pipeline:
+    dependencies:
+      '@openlinkos/agent':
+        specifier: workspace:*
+        version: link:../../packages/agent
+      '@openlinkos/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
+      dotenv:
+        specifier: ^16.0.0
+        version: 16.6.1
+
   examples/basic-chatbot:
     dependencies:
       '@openlinkos/agent':

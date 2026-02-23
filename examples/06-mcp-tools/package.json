@@ -1,0 +1,17 @@
+{
+  "name": "@openlinkos/example-06-mcp-tools",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "MCP Tools: connect to an MCP server and expose its tools to a real LLM agent",
+  "scripts": {
+    "start": "npx tsx index.ts",
+    "server": "npx tsx server.ts"
+  },
+  "dependencies": {
+    "@openlinkos/ai": "workspace:*",
+    "@openlinkos/agent": "workspace:*",
+    "@openlinkos/mcp": "workspace:*",
+    "dotenv": "^16.0.0"
+  }
+}
