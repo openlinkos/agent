@@ -26,6 +26,32 @@ import {
 } from "../errors.js";
 
 // ---------------------------------------------------------------------------
+// JSON code-block stripping
+// ---------------------------------------------------------------------------
+
+/**
+ * Strip markdown JSON code blocks from model output.
+ *
+ * Many LLMs wrap JSON responses in ```json ... ``` fences even when
+ * asked for plain JSON. This function detects and removes them.
+ *
+ * Handles:
+ * - ```json ... ```
+ * - ``` ... ```
+ * - Leading/trailing whitespace around the code block
+ */
+export function stripJsonCodeBlock(input: string): string {
+  const text = input.trim();
+  // Match ```json ... ``` or ``` ... ```
+  const codeBlockPattern = /^```(?:json)?\s*\n?([\s\S]*?)\n?```\s*$/;
+  const match = text.match(codeBlockPattern);
+  if (match) {
+    return match[1].trim();
+  }
+  return text;
+}
+
+// ---------------------------------------------------------------------------
 // Think-tag stripping
 // ---------------------------------------------------------------------------
 
@@ -471,6 +497,11 @@ export abstract class OpenAIAdapter implements ModelProvider {
       const result = stripThinkTags(rawText);
       text = result.text || null;
       reasoning = result.reasoning;
+    }
+
+    // Strip markdown code blocks when JSON response format is requested
+    if (text && options.responseFormat?.type === "json") {
+      text = stripJsonCodeBlock(text);
     }
 
     return {

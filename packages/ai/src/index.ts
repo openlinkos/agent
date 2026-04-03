@@ -122,6 +122,7 @@ export {
   parseFinishReason,
   parseUsage,
   stripThinkTags,
+  stripJsonCodeBlock,
   type StripThinkTagsResult,
   type OpenAIMessage,
   type OpenAIToolCall,
