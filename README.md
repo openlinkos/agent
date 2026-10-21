@@ -1,4 +1,11 @@
 <p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://openlinkos.com/brand/agent/github/readme-dark.svg">
+    <img alt="OpenLinkOS Agent" src="https://openlinkos.com/brand/agent/github/readme-light.svg" height="48">
+  </picture>
+</p>
+
+<p align="center">
   <strong>OpenLinkOS Agent Framework</strong><br/>
   A comprehensive TypeScript agent framework for building AI-powered applications.
 </p>
