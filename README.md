@@ -1,8 +1,5 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://openlinkos.com/brand/agent/github/readme-dark.svg">
-    <img alt="OpenLinkOS Agent" src="https://openlinkos.com/brand/agent/github/readme-light.svg" height="48">
-  </picture>
+  <img alt="OpenLinkOS Agent" src="https://openlinkos.com/brand/agent/github/readme.svg" height="56">
 </p>
 
 <p align="center">
